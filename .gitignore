@@ -1,0 +1,26 @@
+# ---- OS / IDE ----
+.DS_Store
+Thumbs.db
+.vscode/
+.vs/
+
+# ---- .NET / Visual Studio ----
+bin/
+obj/
+Debug/
+Release/
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ---- Logs ----
+*.log
+
+# ---- ASP.NET Core settings (keep secrets out of git) ----
+appsettings.json
+appsettings.Development.json
+appsettings.*.json
+
+
