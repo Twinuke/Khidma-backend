@@ -27,48 +27,76 @@ public class ReviewsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Review>> GetReview(int id)
     {
-        var review = await _context.Reviews.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        var review = await _context.Reviews.AsNoTracking().FirstOrDefaultAsync(r => r.ReviewId == id);
         if (review == null) return NotFound();
         return Ok(review);
     }
 
-    // GET: api/Reviews/by-user/{userId}
-    // Lists reviews for a user (as reviewed)
-    [HttpGet("by-user/{userId}")]
-    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsForUser(int userId)
+    // GET: api/Reviews/by-contract/{contractId}
+    [HttpGet("by-contract/{contractId}")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsByContract(int contractId)
     {
-        var reviews = await _context.Reviews.AsNoTracking().Where(r => r.ReviewedUserId == userId).ToListAsync();
+        var reviews = await _context.Reviews.AsNoTracking()
+            .Where(r => r.ContractId == contractId)
+            .ToListAsync();
         return Ok(reviews);
     }
 
-    // GET: api/Reviews/by-job/{jobId}
-    [HttpGet("by-job/{jobId}")]
-    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsForJob(int jobId)
+    // GET: api/Reviews/by-reviewer/{reviewerId}
+    [HttpGet("by-reviewer/{reviewerId}")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsByReviewer(int reviewerId)
     {
-        var reviews = await _context.Reviews.AsNoTracking().Where(r => r.JobId == jobId).ToListAsync();
+        var reviews = await _context.Reviews.AsNoTracking()
+            .Where(r => r.ReviewerId == reviewerId)
+            .ToListAsync();
+        return Ok(reviews);
+    }
+
+    // GET: api/Reviews/by-reviewee/{revieweeId}
+    [HttpGet("by-reviewee/{revieweeId}")]
+    public async Task<ActionResult<IEnumerable<Review>>> GetReviewsByReviewee(int revieweeId)
+    {
+        var reviews = await _context.Reviews.AsNoTracking()
+            .Where(r => r.RevieweeId == revieweeId)
+            .ToListAsync();
         return Ok(reviews);
     }
 
     // POST: api/Reviews
-    // Creates a new review
     [HttpPost]
     public async Task<ActionResult<Review>> CreateReview([FromBody] Review review)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        review.ReviewDate = DateTime.UtcNow;
+
+        // Verify contract exists
+        var contract = await _context.Contracts.FindAsync(review.ContractId);
+        if (contract == null) return BadRequest("Contract not found");
+
+        // Verify reviewer exists
+        var reviewer = await _context.Users.FindAsync(review.ReviewerId);
+        if (reviewer == null) return BadRequest("Reviewer not found");
+
+        // Verify reviewee exists
+        var reviewee = await _context.Users.FindAsync(review.RevieweeId);
+        if (reviewee == null) return BadRequest("Reviewee not found");
+
+        review.CreatedAt = DateTime.UtcNow;
         _context.Reviews.Add(review);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetReview), new { id = review.Id }, review);
+        return CreatedAtAction(nameof(GetReview), new { id = review.ReviewId }, review);
     }
 
     // PUT: api/Reviews/{id}
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateReview(int id, [FromBody] Review review)
     {
-        if (id != review.Id) return BadRequest();
-        var exists = await _context.Reviews.AnyAsync(r => r.Id == id);
-        if (!exists) return NotFound();
-        _context.Entry(review).State = EntityState.Modified;
+        if (id != review.ReviewId) return BadRequest();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var existingReview = await _context.Reviews.FindAsync(id);
+        if (existingReview == null) return NotFound();
+
+        _context.Entry(existingReview).CurrentValues.SetValues(review);
         await _context.SaveChangesAsync();
         return NoContent();
     }
@@ -84,5 +112,3 @@ public class ReviewsController : ControllerBase
         return NoContent();
     }
 }
-
-

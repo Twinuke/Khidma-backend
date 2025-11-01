@@ -27,53 +27,95 @@ public class BidsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Bid>> GetBid(int id)
     {
-        var bid = await _context.Bids.AsNoTracking().FirstOrDefaultAsync(b => b.Id == id);
+        var bid = await _context.Bids.AsNoTracking().FirstOrDefaultAsync(b => b.BidId == id);
         if (bid == null) return NotFound();
         return Ok(bid);
     }
 
     // GET: api/Bids/by-job/{jobId}
-    // Lists bids for a specific job
     [HttpGet("by-job/{jobId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForJob(int jobId)
     {
-        var bids = await _context.Bids.AsNoTracking().Where(b => b.JobId == jobId).ToListAsync();
+        var bids = await _context.Bids.AsNoTracking()
+            .Where(b => b.JobId == jobId)
+            .ToListAsync();
+        return Ok(bids);
+    }
+
+    // GET: api/Bids/by-freelancer/{freelancerId}
+    [HttpGet("by-freelancer/{freelancerId}")]
+    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByFreelancer(int freelancerId)
+    {
+        var bids = await _context.Bids.AsNoTracking()
+            .Where(b => b.FreelancerId == freelancerId)
+            .ToListAsync();
+        return Ok(bids);
+    }
+
+    // GET: api/Bids/by-status/{status}
+    [HttpGet("by-status/{status}")]
+    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByStatus(BidStatus status)
+    {
+        var bids = await _context.Bids.AsNoTracking()
+            .Where(b => b.Status == status)
+            .ToListAsync();
         return Ok(bids);
     }
 
     // POST: api/Bids
-    // Creates a new bid
     [HttpPost]
     public async Task<ActionResult<Bid>> CreateBid([FromBody] Bid bid)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        bid.BidDate = DateTime.UtcNow;
+
+        // Verify job exists
+        var job = await _context.Jobs.FindAsync(bid.JobId);
+        if (job == null) return BadRequest("Job not found");
+
+        // Verify freelancer exists
+        var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
+        if (freelancer == null) return BadRequest("Freelancer not found");
+
+        bid.CreatedAt = DateTime.UtcNow;
+        bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetBid), new { id = bid.Id }, bid);
+        return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
     // PUT: api/Bids/{id}
-    // Updates an existing bid
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateBid(int id, [FromBody] Bid bid)
     {
-        if (id != bid.Id) return BadRequest();
-        var exists = await _context.Bids.AnyAsync(b => b.Id == id);
-        if (!exists) return NotFound();
-        _context.Entry(bid).State = EntityState.Modified;
+        if (id != bid.BidId) return BadRequest();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var existingBid = await _context.Bids.FindAsync(id);
+        if (existingBid == null) return NotFound();
+
+        _context.Entry(existingBid).CurrentValues.SetValues(bid);
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
     // PUT: api/Bids/{id}/accept
-    // Marks a bid as accepted
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
         var bid = await _context.Bids.FindAsync(id);
         if (bid == null) return NotFound();
-        bid.IsAccepted = true;
+        bid.Status = BidStatus.Accepted;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    // PUT: api/Bids/{id}/reject
+    [HttpPut("{id}/reject")]
+    public async Task<IActionResult> RejectBid(int id)
+    {
+        var bid = await _context.Bids.FindAsync(id);
+        if (bid == null) return NotFound();
+        bid.Status = BidStatus.Rejected;
         await _context.SaveChangesAsync();
         return NoContent();
     }
@@ -89,5 +131,3 @@ public class BidsController : ControllerBase
         return NoContent();
     }
 }
-
-

@@ -27,62 +27,76 @@ public class JobsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<Job>> GetJob(int id)
     {
-        var job = await _context.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.Id == id);
+        var job = await _context.Jobs.AsNoTracking().FirstOrDefaultAsync(j => j.JobId == id);
         if (job == null) return NotFound();
         return Ok(job);
     }
 
     // GET: api/Jobs/by-client/{clientId}
-    // Lists jobs created by a specific client
     [HttpGet("by-client/{clientId}")]
     public async Task<ActionResult<IEnumerable<Job>>> GetJobsByClient(int clientId)
     {
-        var jobs = await _context.Jobs.AsNoTracking().Where(j => j.ClientId == clientId).ToListAsync();
+        var jobs = await _context.Jobs.AsNoTracking()
+            .Where(j => j.ClientId == clientId)
+            .ToListAsync();
         return Ok(jobs);
     }
 
-    // GET: api/Jobs/by-freelancer/{freelancerId}
-    // Lists jobs where a given freelancer has placed a bid
-    [HttpGet("by-freelancer/{freelancerId}")]
-    public async Task<ActionResult<IEnumerable<Job>>> GetJobsByFreelancer(int freelancerId)
+    // GET: api/Jobs/by-status/{status}
+    [HttpGet("by-status/{status}")]
+    public async Task<ActionResult<IEnumerable<Job>>> GetJobsByStatus(JobStatus status)
     {
-        var jobs = await _context.Bids.AsNoTracking()
-            .Where(b => b.FreelancerId == freelancerId)
-            .Select(b => b.Job!)
-            .Distinct()
+        var jobs = await _context.Jobs.AsNoTracking()
+            .Where(j => j.Status == status)
+            .ToListAsync();
+        return Ok(jobs);
+    }
+
+    // GET: api/Jobs/by-category/{category}
+    [HttpGet("by-category/{category}")]
+    public async Task<ActionResult<IEnumerable<Job>>> GetJobsByCategory(string category)
+    {
+        var jobs = await _context.Jobs.AsNoTracking()
+            .Where(j => j.Category == category)
             .ToListAsync();
         return Ok(jobs);
     }
 
     // POST: api/Jobs
-    // Creates a new job
     [HttpPost]
     public async Task<ActionResult<Job>> CreateJob([FromBody] Job job)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        job.PostedDate = DateTime.UtcNow;
+        
+        // Verify client exists
+        var client = await _context.Users.FindAsync(job.ClientId);
+        if (client == null) return BadRequest("Client not found");
+
+        job.CreatedAt = DateTime.UtcNow;
+        job.Status = JobStatus.Open;
         _context.Jobs.Add(job);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetJob), new { id = job.Id }, job);
+        return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
     }
 
     // PUT: api/Jobs/{id}
-    // Updates an existing job
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateJob(int id, [FromBody] Job job)
     {
-        if (id != job.Id) return BadRequest();
-        var exists = await _context.Jobs.AnyAsync(j => j.Id == id);
-        if (!exists) return NotFound();
-        _context.Entry(job).State = EntityState.Modified;
+        if (id != job.JobId) return BadRequest();
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var existingJob = await _context.Jobs.FindAsync(id);
+        if (existingJob == null) return NotFound();
+
+        _context.Entry(existingJob).CurrentValues.SetValues(job);
         await _context.SaveChangesAsync();
         return NoContent();
     }
 
-    // PATCH-like: api/Jobs/{id}/status/{status}
-    // Updates the status of a job
-    [HttpPut("{id}/status/{status}")]
-    public async Task<IActionResult> UpdateJobStatus(int id, string status)
+    // PUT: api/Jobs/{id}/status
+    [HttpPut("{id}/status")]
+    public async Task<IActionResult> UpdateJobStatus(int id, [FromBody] JobStatus status)
     {
         var job = await _context.Jobs.FindAsync(id);
         if (job == null) return NotFound();
@@ -102,5 +116,3 @@ public class JobsController : ControllerBase
         return NoContent();
     }
 }
-
-

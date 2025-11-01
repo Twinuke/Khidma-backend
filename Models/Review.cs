@@ -1,28 +1,40 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace khidma_backend.Models;
 
 public class Review
 {
     [Key]
-    public int Id { get; set; }
+    public int ReviewId { get; set; }
 
-    // Relationships
+    [Required]
+    public int ContractId { get; set; }
+
+    [Required]
     public int ReviewerId { get; set; }
-    public User? Reviewer { get; set; }
 
-    public int ReviewedUserId { get; set; }
-    public User? ReviewedUser { get; set; }
+    [Required]
+    public int RevieweeId { get; set; }
 
-    public int JobId { get; set; }
-    public Job? Job { get; set; }
-
-    [Range(1, 5)]
+    [Required]
+    [Range(1, 5, ErrorMessage = "Rating must be between 1 and 5")]
     public int Rating { get; set; }
 
-    public string Comment { get; set; } = string.Empty;
+    [Column(TypeName = "TEXT")]
+    public string? Comment { get; set; }
 
-    public DateTime ReviewDate { get; set; }
+    [Required]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    [JsonIgnore]
+    public Contract? Contract { get; set; }
+
+    [JsonIgnore]
+    public User? Reviewer { get; set; }
+
+    [JsonIgnore]
+    public User? Reviewee { get; set; }
 }
-
-

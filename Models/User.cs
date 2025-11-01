@@ -1,37 +1,79 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace khidma_backend.Models;
+
+public enum UserType
+{
+    Freelancer = 0,
+    Client = 1,
+    Admin = 2
+}
 
 public class User
 {
     [Key]
-    public int Id { get; set; }
+    public int UserId { get; set; }
 
     [Required]
-    [MaxLength(200)]
+    [StringLength(100)]
     public string FullName { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(200)]
+    [EmailAddress]
+    [StringLength(255)]
     public string Email { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(256)]
+    [StringLength(500)]
     public string PasswordHash { get; set; } = string.Empty;
 
+    [StringLength(20)]
+    public string? PhoneNumber { get; set; }
+
     [Required]
-    [MaxLength(32)]
-    public string Role { get; set; } = string.Empty; // "Freelancer" or "Client"
+    public UserType UserType { get; set; }
 
-    public double? Rating { get; set; }
+    [Column(TypeName = "TEXT")]
+    public string? ProfileBio { get; set; }
 
-    public DateTime DateCreated { get; set; }
+    [Required]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation collections
-    public ICollection<Job>? JobsPosted { get; set; } // as Client
-    public ICollection<Bid>? BidsPlaced { get; set; } // as Freelancer
-    public ICollection<Review>? ReviewsGiven { get; set; }
+    public DateTime? LastLogin { get; set; }
+
+    // Navigation properties
+    [JsonIgnore]
+    public ICollection<Job>? Jobs { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Bid>? Bids { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Review>? ReviewsWritten { get; set; }
+
+    [JsonIgnore]
     public ICollection<Review>? ReviewsReceived { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Payment>? Payments { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Message>? SentMessages { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Message>? ReceivedMessages { get; set; }
+
+    [JsonIgnore]
+    public ICollection<UserSkill>? UserSkills { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Contract>? ContractsAsFreelancer { get; set; }
+
+    [JsonIgnore]
+    public ICollection<Contract>? ContractsAsClient { get; set; }
+
+    [JsonIgnore]
+    public ICollection<ChatbotLog>? ChatbotLogs { get; set; }
 }
-
-

@@ -15,7 +15,8 @@ public class Program
         builder.Services.AddSwaggerGen();
 
         // EF Core DbContext registration
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        var connectionString = builder.Configuration.GetConnectionString("KhidmaDbContext") 
+            ?? builder.Configuration.GetConnectionString("DefaultConnection");
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 

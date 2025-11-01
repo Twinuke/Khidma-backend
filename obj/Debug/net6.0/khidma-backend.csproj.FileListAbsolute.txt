@@ -50,3 +50,4 @@ C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Deb
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\ref\khidma-backend.dll
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\MySqlConnector.dll
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Pomelo.EntityFrameworkCore.MySql.dll
+C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.sourcelink.json
