@@ -32,8 +32,8 @@ public class BidsController : ControllerBase
         return Ok(bid);
     }
 
-    // GET: api/Bids/by-job/{jobId}
-    [HttpGet("by-job/{jobId}")]
+    // GET: api/Bids/job/{jobId}
+    [HttpGet("job/{jobId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForJob(int jobId)
     {
         var bids = await _context.Bids.AsNoTracking()
@@ -42,8 +42,8 @@ public class BidsController : ControllerBase
         return Ok(bids);
     }
 
-    // GET: api/Bids/by-freelancer/{freelancerId}
-    [HttpGet("by-freelancer/{freelancerId}")]
+    // GET: api/Bids/freelancer/{freelancerId}
+    [HttpGet("freelancer/{freelancerId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByFreelancer(int freelancerId)
     {
         var bids = await _context.Bids.AsNoTracking()
@@ -98,15 +98,60 @@ public class BidsController : ControllerBase
         return NoContent();
     }
 
-    // PUT: api/Bids/{id}/accept
+    // PUT: api/Bids/{id}/accept - Accept bid and create contract automatically
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
-        var bid = await _context.Bids.FindAsync(id);
+        var bid = await _context.Bids
+            .Include(b => b.Job)
+            .FirstOrDefaultAsync(b => b.BidId == id);
+        
         if (bid == null) return NotFound();
+        
+        if (bid.Status != BidStatus.Pending)
+        {
+            return BadRequest("Bid is not in pending status");
+        }
+
+        // Verify job exists and is open
+        var job = await _context.Jobs.FindAsync(bid.JobId);
+        if (job == null) return BadRequest("Job not found");
+        if (job.Status != JobStatus.Open)
+        {
+            return BadRequest("Job is not open for bidding");
+        }
+
+        // Update bid status
         bid.Status = BidStatus.Accepted;
+
+        // Create contract automatically
+        var contract = new Contract
+        {
+            JobId = bid.JobId,
+            FreelancerId = bid.FreelancerId,
+            ClientId = job.ClientId,
+            EscrowAmount = bid.BidAmount,
+            StartDate = DateTime.UtcNow,
+            Status = ContractStatus.Active
+        };
+
+        _context.Contracts.Add(contract);
+
+        // Update job status to Assigned
+        job.Status = JobStatus.Assigned;
+
+        // Reject all other pending bids for this job
+        var otherBids = await _context.Bids
+            .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
+            .ToListAsync();
+        
+        foreach (var otherBid in otherBids)
+        {
+            otherBid.Status = BidStatus.Rejected;
+        }
+
         await _context.SaveChangesAsync();
-        return NoContent();
+        return Ok(contract);
     }
 
     // PUT: api/Bids/{id}/reject

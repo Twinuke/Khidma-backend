@@ -52,13 +52,13 @@ public class MessagesController : ControllerBase
         return Ok(messages);
     }
 
-    // GET: api/Messages/conversation/{userId1}/{userId2}
-    [HttpGet("conversation/{userId1}/{userId2}")]
-    public async Task<ActionResult<IEnumerable<Message>>> GetConversation(int userId1, int userId2)
+    // GET: api/Messages/conversation/{senderId}/{receiverId}
+    [HttpGet("conversation/{senderId}/{receiverId}")]
+    public async Task<ActionResult<IEnumerable<Message>>> GetConversation(int senderId, int receiverId)
     {
         var messages = await _context.Messages.AsNoTracking()
-            .Where(m => (m.SenderId == userId1 && m.ReceiverId == userId2) ||
-                       (m.SenderId == userId2 && m.ReceiverId == userId1))
+            .Where(m => (m.SenderId == senderId && m.ReceiverId == receiverId) ||
+                       (m.SenderId == receiverId && m.ReceiverId == senderId))
             .OrderBy(m => m.CreatedAt)
             .ToListAsync();
         return Ok(messages);

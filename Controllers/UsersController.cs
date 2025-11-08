@@ -51,24 +51,7 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
-    // POST: api/Users
-    [HttpPost]
-    public async Task<ActionResult<User>> CreateUser([FromBody] User user)
-    {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-        
-        // Check if email already exists
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-        if (existingUser != null)
-        {
-            return BadRequest("Email already exists");
-        }
-
-        user.CreatedAt = DateTime.UtcNow;
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetUser), new { id = user.UserId }, user);
-    }
+    // Note: User registration is handled by AuthController.Register
 
     // PUT: api/Users/{id}
     [HttpPut("{id}")]

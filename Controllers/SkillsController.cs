@@ -106,9 +106,9 @@ public class SkillsController : ControllerBase
         return Ok(skills);
     }
 
-    // POST: api/Skills/add-to-user
-    [HttpPost("add-to-user")]
-    public async Task<ActionResult> AddSkillToUser([FromBody] UserSkill userSkill)
+    // POST: api/Skills/assign - Assign skill to user
+    [HttpPost("assign")]
+    public async Task<ActionResult> AssignSkillToUser([FromBody] UserSkill userSkill)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
@@ -133,14 +133,17 @@ public class SkillsController : ControllerBase
         return Ok();
     }
 
-    // DELETE: api/Skills/remove-from-user/{userId}/{skillId}
-    [HttpDelete("remove-from-user/{userId}/{skillId}")]
-    public async Task<IActionResult> RemoveSkillFromUser(int userId, int skillId)
+    // DELETE: api/Skills/assign - Remove user skill
+    [HttpDelete("assign")]
+    public async Task<IActionResult> RemoveSkillFromUser([FromBody] UserSkill userSkill)
     {
-        var userSkill = await _context.UserSkills
-            .FirstOrDefaultAsync(us => us.UserId == userId && us.SkillId == skillId);
-        if (userSkill == null) return NotFound();
-        _context.UserSkills.Remove(userSkill);
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var existingUserSkill = await _context.UserSkills
+            .FirstOrDefaultAsync(us => us.UserId == userSkill.UserId && us.SkillId == userSkill.SkillId);
+        if (existingUserSkill == null) return NotFound();
+        
+        _context.UserSkills.Remove(existingUserSkill);
         await _context.SaveChangesAsync();
         return NoContent();
     }

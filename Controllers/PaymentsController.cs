@@ -32,8 +32,8 @@ public class PaymentsController : ControllerBase
         return Ok(payment);
     }
 
-    // GET: api/Payments/by-contract/{contractId}
-    [HttpGet("by-contract/{contractId}")]
+    // GET: api/Payments/contract/{contractId}
+    [HttpGet("contract/{contractId}")]
     public async Task<ActionResult<IEnumerable<Payment>>> GetPaymentsByContract(int contractId)
     {
         var payments = await _context.Payments.AsNoTracking()
@@ -84,24 +84,13 @@ public class PaymentsController : ControllerBase
         return NoContent();
     }
 
-    // PUT: api/Payments/{id}/release
-    [HttpPut("{id}/release")]
-    public async Task<IActionResult> ReleasePayment(int id)
+    // PUT: api/Payments/{id}/status - Update payment status
+    [HttpPut("{id}/status")]
+    public async Task<IActionResult> UpdatePaymentStatus(int id, [FromBody] PaymentStatus status)
     {
         var payment = await _context.Payments.FindAsync(id);
         if (payment == null) return NotFound();
-        payment.PaymentStatus = PaymentStatus.Released;
-        await _context.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // PUT: api/Payments/{id}/refund
-    [HttpPut("{id}/refund")]
-    public async Task<IActionResult> RefundPayment(int id)
-    {
-        var payment = await _context.Payments.FindAsync(id);
-        if (payment == null) return NotFound();
-        payment.PaymentStatus = PaymentStatus.Refunded;
+        payment.PaymentStatus = status;
         await _context.SaveChangesAsync();
         return NoContent();
     }

@@ -42,8 +42,8 @@ public class ContractsController : ControllerBase
         return Ok(contracts);
     }
 
-    // GET: api/Contracts/by-freelancer/{freelancerId}
-    [HttpGet("by-freelancer/{freelancerId}")]
+    // GET: api/Contracts/freelancer/{freelancerId}
+    [HttpGet("freelancer/{freelancerId}")]
     public async Task<ActionResult<IEnumerable<Contract>>> GetContractsByFreelancer(int freelancerId)
     {
         var contracts = await _context.Contracts.AsNoTracking()
@@ -52,8 +52,8 @@ public class ContractsController : ControllerBase
         return Ok(contracts);
     }
 
-    // GET: api/Contracts/by-client/{clientId}
-    [HttpGet("by-client/{clientId}")]
+    // GET: api/Contracts/client/{clientId}
+    [HttpGet("client/{clientId}")]
     public async Task<ActionResult<IEnumerable<Contract>>> GetContractsByClient(int clientId)
     {
         var contracts = await _context.Contracts.AsNoTracking()

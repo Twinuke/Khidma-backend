@@ -16,11 +16,14 @@ public class JobsController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Jobs
+    // GET: api/Jobs - Get all open jobs
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Job>>> GetJobs()
     {
-        return await _context.Jobs.AsNoTracking().ToListAsync();
+        return await _context.Jobs
+            .AsNoTracking()
+            .Where(j => j.Status == JobStatus.Open)
+            .ToListAsync();
     }
 
     // GET: api/Jobs/{id}
@@ -32,8 +35,8 @@ public class JobsController : ControllerBase
         return Ok(job);
     }
 
-    // GET: api/Jobs/by-client/{clientId}
-    [HttpGet("by-client/{clientId}")]
+    // GET: api/Jobs/client/{clientId}
+    [HttpGet("client/{clientId}")]
     public async Task<ActionResult<IEnumerable<Job>>> GetJobsByClient(int clientId)
     {
         var jobs = await _context.Jobs.AsNoTracking()
