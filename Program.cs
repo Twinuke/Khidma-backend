@@ -49,15 +49,27 @@ public class Program
 
         builder.Services.AddAuthorization();
 
-        // CORS for GitHub Pages frontend
+        // CORS for local development and production
         const string CorsPolicyName = "FrontendPolicy";
         builder.Services.AddCors(options =>
         {
             options.AddPolicy(name: CorsPolicyName, policy =>
             {
-                policy.WithOrigins("https://<your-username>.github.io")
-                      .AllowAnyHeader()
-                      .AllowAnyMethod();
+                if (builder.Environment.IsDevelopment())
+                {
+                    // Allow all origins in development for easier testing
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                }
+                else
+                {
+                    // Restrict to specific origins in production
+                    policy.WithOrigins("http://localhost:3000", "http://localhost:19006", "http://localhost:8081", "exp://localhost:8081")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod()
+                          .AllowCredentials();
+                }
             });
         });
 

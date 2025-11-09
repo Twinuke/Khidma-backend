@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
-using BCrypt.Net;
 
 namespace khidma_backend.Controllers;
 
@@ -89,7 +88,7 @@ public class AuthController : ControllerBase
         }
 
         // Hash password using BCrypt
-        var passwordHash = BCrypt.HashPassword(request.Password);
+        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
         // Create new user
         var user = new User
@@ -144,7 +143,7 @@ public class AuthController : ControllerBase
         }
 
         // Verify password
-        if (!BCrypt.Verify(request.Password, user.PasswordHash))
+        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             return Unauthorized(new { message = "Invalid email or password" });
         }
@@ -206,6 +205,146 @@ public class AuthController : ControllerBase
         };
 
         return Ok(userInfo);
+    }
+
+    /// <summary>
+    /// Send OTP to phone number
+    /// </summary>
+    [HttpPost("send-otp")]
+    public async Task<IActionResult> SendOtp([FromBody] SendOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Generate 6-digit OTP
+        var random = new Random();
+        var otpCode = random.Next(100000, 999999).ToString();
+
+        // Invalidate any existing OTPs for this phone number
+        var existingOtps = await _context.OtpCodes
+            .Where(o => o.PhoneNumber == request.PhoneNumber && !o.IsUsed && o.ExpiresAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var existingOtp in existingOtps)
+        {
+            existingOtp.IsUsed = true;
+        }
+
+        // Create new OTP (expires in 5 minutes)
+        var newOtp = new OtpCode
+        {
+            PhoneNumber = request.PhoneNumber,
+            Code = otpCode,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(5),
+            CreatedAt = DateTime.UtcNow,
+            IsUsed = false
+        };
+
+        _context.OtpCodes.Add(newOtp);
+        await _context.SaveChangesAsync();
+
+        // TODO: In production, send SMS via Twilio, AWS SNS, or similar service
+        // For now, we'll just return the OTP in development (remove this in production!)
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        
+        if (isDevelopment)
+        {
+            // Log OTP to console for development
+            Console.WriteLine($"OTP for {request.PhoneNumber}: {otpCode}");
+        }
+
+        return Ok(new { 
+            message = "OTP sent successfully",
+            // Remove this in production!
+            otp = isDevelopment ? otpCode : null
+        });
+    }
+
+    /// <summary>
+    /// Verify OTP and authenticate user
+    /// </summary>
+    [HttpPost("verify-otp")]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Find valid OTP
+        var otp = await _context.OtpCodes
+            .Where(o => o.PhoneNumber == request.PhoneNumber 
+                     && o.Code == request.Otp 
+                     && !o.IsUsed 
+                     && o.ExpiresAt > DateTime.UtcNow)
+            .OrderByDescending(o => o.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (otp == null)
+        {
+            return BadRequest(new { message = "Invalid or expired OTP" });
+        }
+
+        // Mark OTP as used
+        otp.IsUsed = true;
+        await _context.SaveChangesAsync();
+
+        // Check if user exists with this phone number
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber);
+
+        if (user != null)
+        {
+            // User exists, generate token and return
+            var token = _jwtService.GenerateToken(user.UserId, user.Email, user.UserType.ToString());
+            
+            // Update last login
+            user.LastLogin = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                token = token,
+                user = new UserInfo
+                {
+                    UserId = user.UserId,
+                    FullName = user.FullName,
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber,
+                    UserType = user.UserType,
+                    ProfileBio = user.ProfileBio
+                },
+                isNewUser = false
+            });
+        }
+        else
+        {
+            // New user, return without token (they need to complete registration)
+            return Ok(new
+            {
+                message = "OTP verified. Please complete registration.",
+                isNewUser = true
+            });
+        }
+    }
+
+    public class SendOtpRequest
+    {
+        [Required]
+        [StringLength(20)]
+        public string PhoneNumber { get; set; } = string.Empty;
+    }
+
+    public class VerifyOtpRequest
+    {
+        [Required]
+        [StringLength(20)]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Otp { get; set; } = string.Empty;
     }
 }
 
