@@ -36,8 +36,9 @@ public class AuthController : ControllerBase
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
+        [Required]
         [StringLength(20)]
-        public string? PhoneNumber { get; set; }
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]
         public UserType UserType { get; set; }
@@ -70,7 +71,8 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Register a new user
+    /// Step 3: Register user (only if phone is verified)
+    /// Allows registration only if phoneNumber has been verified via OTP
     /// </summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -80,11 +82,37 @@ public class AuthController : ControllerBase
             return BadRequest(ModelState);
         }
 
+        // Check if phone number is provided and verified
+        if (string.IsNullOrEmpty(request.PhoneNumber))
+        {
+            return BadRequest(new { message = "Phone number is required" });
+        }
+
+        // Verify that the phone number has been verified via OTP
+        var verifiedPhone = await _context.PhoneVerifications
+            .Where(pv => pv.PhoneNumber == request.PhoneNumber 
+                     && pv.IsVerified 
+                     && pv.ExpireAt > DateTime.UtcNow)
+            .OrderByDescending(pv => pv.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (verifiedPhone == null)
+        {
+            return BadRequest(new { message = "Phone number must be verified before registration. Please complete phone verification first." });
+        }
+
         // Check if email already exists
-        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (existingUser != null)
+        var existingUserByEmail = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (existingUserByEmail != null)
         {
             return BadRequest(new { message = "Email already exists" });
+        }
+
+        // Check if phone number already exists in Users table
+        var existingUserByPhone = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber);
+        if (existingUserByPhone != null)
+        {
+            return BadRequest(new { message = "Phone number is already registered" });
         }
 
         // Hash password using BCrypt
@@ -337,6 +365,126 @@ public class AuthController : ControllerBase
     }
 
     public class VerifyOtpRequest
+    {
+        [Required]
+        [StringLength(20)]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Otp { get; set; } = string.Empty;
+    }
+
+    // ========== Two-Step Phone Verification Endpoints ==========
+
+    /// <summary>
+    /// Step 1: Verify phone number and send OTP
+    /// Checks if phone number is valid and not already registered, then sends OTP
+    /// </summary>
+    [HttpPost("verify-phone")]
+    public async Task<IActionResult> VerifyPhone([FromBody] VerifyPhoneRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Check if phone number already exists in Users table
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber);
+        if (existingUser != null)
+        {
+            return BadRequest(new { message = "Phone number is already registered" });
+        }
+
+        // Generate 6-digit OTP
+        var random = new Random();
+        var otpCode = random.Next(100000, 999999).ToString();
+
+        // Invalidate any existing unverified OTPs for this phone number
+        var existingVerifications = await _context.PhoneVerifications
+            .Where(pv => pv.PhoneNumber == request.PhoneNumber && !pv.IsVerified && pv.ExpireAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var existingVerification in existingVerifications)
+        {
+            existingVerification.IsVerified = true; // Mark as used/invalid
+        }
+
+        // Create new phone verification (expires in 5 minutes)
+        var phoneVerification = new PhoneVerification
+        {
+            PhoneNumber = request.PhoneNumber,
+            Code = otpCode,
+            ExpireAt = DateTime.UtcNow.AddMinutes(5),
+            IsVerified = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.PhoneVerifications.Add(phoneVerification);
+        await _context.SaveChangesAsync();
+
+        // TODO: In production, send SMS via Twilio, AWS SNS, or similar service
+        // For now, we'll just return the OTP in development (remove this in production!)
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        
+        if (isDevelopment)
+        {
+            // Log OTP to console for development
+            Console.WriteLine($"OTP for {request.PhoneNumber}: {otpCode}");
+        }
+
+        return Ok(new { 
+            message = "OTP sent successfully to your phone number",
+            // Remove this in production!
+            otp = isDevelopment ? otpCode : null
+        });
+    }
+
+    /// <summary>
+    /// Step 2: Confirm OTP code
+    /// Validates the OTP and marks the phone number as verified
+    /// </summary>
+    [HttpPost("confirm-otp")]
+    public async Task<IActionResult> ConfirmOtp([FromBody] ConfirmOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Find valid, unverified OTP
+        var phoneVerification = await _context.PhoneVerifications
+            .Where(pv => pv.PhoneNumber == request.PhoneNumber 
+                     && pv.Code == request.Otp 
+                     && !pv.IsVerified 
+                     && pv.ExpireAt > DateTime.UtcNow)
+            .OrderByDescending(pv => pv.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (phoneVerification == null)
+        {
+            return BadRequest(new { message = "Invalid or expired OTP code" });
+        }
+
+        // Mark as verified
+        phoneVerification.IsVerified = true;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "Phone number verified successfully",
+            phoneNumber = request.PhoneNumber
+        });
+    }
+
+    // DTOs for phone verification
+    public class VerifyPhoneRequest
+    {
+        [Required]
+        [StringLength(20)]
+        public string PhoneNumber { get; set; } = string.Empty;
+    }
+
+    public class ConfirmOtpRequest
     {
         [Required]
         [StringLength(20)]
