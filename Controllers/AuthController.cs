@@ -14,11 +14,13 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly JwtService _jwtService;
+    private readonly EmailService _emailService;
 
-    public AuthController(AppDbContext context, JwtService jwtService)
+    public AuthController(AppDbContext context, JwtService jwtService, EmailService emailService)
     {
         _context = context;
         _jwtService = jwtService;
+        _emailService = emailService;
     }
 
     // DTOs for request/response
@@ -493,6 +495,221 @@ public class AuthController : ControllerBase
         [Required]
         [StringLength(6, MinimumLength = 6)]
         public string Otp { get; set; } = string.Empty;
+    }
+
+    // ========== Email OTP Endpoints ==========
+
+    /// <summary>
+    /// Request email OTP - sends a 6-digit code to the user's email
+    /// </summary>
+    [HttpPost("request-email-otp")]
+    public async Task<IActionResult> RequestEmailOtp([FromBody] RequestEmailOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Validate email format
+        if (!System.Text.RegularExpressions.Regex.IsMatch(request.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            return BadRequest(new { message = "Invalid email format" });
+        }
+
+        // Check if email already exists in Users table (for registration)
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (existingUser != null && request.Purpose == "register")
+        {
+            return BadRequest(new { message = "Email is already registered" });
+        }
+
+        // Generate 6-digit OTP
+        var random = new Random();
+        var otpCode = random.Next(100000, 999999).ToString();
+
+        // Invalidate any existing unverified OTPs for this email
+        var existingVerifications = await _context.EmailVerifications
+            .Where(ev => ev.Email == request.Email && !ev.IsVerified && ev.ExpireAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var existingVerification in existingVerifications)
+        {
+            existingVerification.IsVerified = true; // Mark as used/invalid
+        }
+
+        // Create new email verification (expires in 5 minutes)
+        var emailVerification = new EmailVerification
+        {
+            Email = request.Email,
+            Code = otpCode,
+            ExpireAt = DateTime.UtcNow.AddMinutes(5),
+            IsVerified = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.EmailVerifications.Add(emailVerification);
+        await _context.SaveChangesAsync();
+
+        // Send email with OTP
+        var emailSent = await _emailService.SendOtpEmailAsync(request.Email, otpCode);
+
+        if (!emailSent)
+        {
+            // If email fails, still return success in development but log the OTP
+            var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            if (isDevelopment)
+            {
+                Console.WriteLine($"OTP for {request.Email}: {otpCode}");
+                return Ok(new { 
+                    message = "OTP generated. Check console for code (development mode)",
+                    // Remove this in production!
+                    otp = isDevelopment ? otpCode : null
+                });
+            }
+            return StatusCode(500, new { message = "Failed to send email. Please try again later." });
+        }
+
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        return Ok(new { 
+            message = "OTP sent successfully to your email",
+            // Remove this in production!
+            otp = isDev ? otpCode : null
+        });
+    }
+
+    /// <summary>
+    /// Verify email OTP code
+    /// </summary>
+    [HttpPost("verify-email-otp")]
+    public async Task<IActionResult> VerifyEmailOtp([FromBody] VerifyEmailOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Find valid, unverified OTP
+        var emailVerification = await _context.EmailVerifications
+            .Where(ev => ev.Email == request.Email 
+                     && ev.Code == request.Otp 
+                     && !ev.IsVerified 
+                     && ev.ExpireAt > DateTime.UtcNow)
+            .OrderByDescending(ev => ev.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (emailVerification == null)
+        {
+            return BadRequest(new { message = "Invalid or expired OTP code" });
+        }
+
+        // Mark as verified
+        emailVerification.IsVerified = true;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { 
+            message = "Email verified successfully",
+            email = request.Email
+        });
+    }
+
+    /// <summary>
+    /// Resend email OTP - generates and sends a new OTP code
+    /// </summary>
+    [HttpPost("resend-email-otp")]
+    public async Task<IActionResult> ResendEmailOtp([FromBody] ResendEmailOtpRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        // Validate email format
+        if (!System.Text.RegularExpressions.Regex.IsMatch(request.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        {
+            return BadRequest(new { message = "Invalid email format" });
+        }
+
+        // Generate new 6-digit OTP
+        var random = new Random();
+        var otpCode = random.Next(100000, 999999).ToString();
+
+        // Invalidate any existing unverified OTPs for this email
+        var existingVerifications = await _context.EmailVerifications
+            .Where(ev => ev.Email == request.Email && !ev.IsVerified && ev.ExpireAt > DateTime.UtcNow)
+            .ToListAsync();
+
+        foreach (var existingVerification in existingVerifications)
+        {
+            existingVerification.IsVerified = true; // Mark as used/invalid
+        }
+
+        // Create new email verification (expires in 5 minutes)
+        var emailVerification = new EmailVerification
+        {
+            Email = request.Email,
+            Code = otpCode,
+            ExpireAt = DateTime.UtcNow.AddMinutes(5),
+            IsVerified = false,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.EmailVerifications.Add(emailVerification);
+        await _context.SaveChangesAsync();
+
+        // Send email with OTP
+        var emailSent = await _emailService.SendOtpEmailAsync(request.Email, otpCode);
+
+        if (!emailSent)
+        {
+            // If email fails, still return success in development but log the OTP
+            var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            if (isDevelopment)
+            {
+                Console.WriteLine($"Resent OTP for {request.Email}: {otpCode}");
+                return Ok(new { 
+                    message = "OTP regenerated. Check console for code (development mode)",
+                    // Remove this in production!
+                    otp = isDevelopment ? otpCode : null
+                });
+            }
+            return StatusCode(500, new { message = "Failed to send email. Please try again later." });
+        }
+
+        var isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+        return Ok(new { 
+            message = "New OTP sent successfully to your email",
+            // Remove this in production!
+            otp = isDev ? otpCode : null
+        });
+    }
+
+    // DTOs for email OTP
+    public class RequestEmailOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [StringLength(20)]
+        public string Purpose { get; set; } = "register"; // "register" or "login"
+    }
+
+    public class VerifyEmailOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(6, MinimumLength = 6)]
+        public string Otp { get; set; } = string.Empty;
+    }
+
+    public class ResendEmailOtpRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
     }
 }
 

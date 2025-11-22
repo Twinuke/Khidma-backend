@@ -22,6 +22,7 @@ public class AppDbContext : DbContext
     public DbSet<UserSkill> UserSkills { get; set; } = null!;
     public DbSet<OtpCode> OtpCodes { get; set; } = null!;
     public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
+    public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

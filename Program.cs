@@ -27,6 +27,9 @@ public class Program
         // JWT Service
         builder.Services.AddScoped<JwtService>();
 
+        // Email Service
+        builder.Services.AddScoped<EmailService>();
+
         // JWT Authentication
         var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key not configured");
         var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer not configured");

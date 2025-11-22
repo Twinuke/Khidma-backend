@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("khidma-backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7fd7f6205ee9031c5142183e3735c9baaeca4ff2")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+978377ae4d7b772b0df9d4a1113d8233f4955df6")]
 [assembly: System.Reflection.AssemblyProductAttribute("khidma-backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("khidma-backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
