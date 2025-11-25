@@ -76,155 +76,68 @@ public class AuthController : ControllerBase
     /// Step 3: Register user (only if phone is verified)
     /// Allows registration only if phoneNumber has been verified via OTP
     /// </summary>
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+   [HttpPost("register")]
+public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+{
+    if (!ModelState.IsValid)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        // Check if phone number is provided and verified
-        if (string.IsNullOrEmpty(request.PhoneNumber))
-        {
-            return BadRequest(new { message = "Phone number is required" });
-        }
-
-        // Verify that the phone number has been verified via OTP
-        var verifiedPhone = await _context.PhoneVerifications
-            .Where(pv => pv.PhoneNumber == request.PhoneNumber 
-                     && pv.IsVerified 
-                     && pv.ExpireAt > DateTime.UtcNow)
-            .OrderByDescending(pv => pv.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (verifiedPhone == null)
-        {
-            return BadRequest(new { message = "Phone number must be verified before registration. Please complete phone verification first." });
-        }
-
-        // Check if email already exists
-        var existingUserByEmail = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (existingUserByEmail != null)
-        {
-            return BadRequest(new { message = "Email already exists" });
-        }
-
-        // Check if phone number already exists in Users table
-        var existingUserByPhone = await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber);
-        if (existingUserByPhone != null)
-        {
-            return BadRequest(new { message = "Phone number is already registered" });
-        }
-
-        // Hash password using BCrypt
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-        // Create new user
-        var user = new User
-        {
-            FullName = request.FullName,
-            Email = request.Email,
-            PasswordHash = passwordHash,
-            PhoneNumber = request.PhoneNumber,
-            UserType = request.UserType,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _context.Users.Add(user);
-        await _context.SaveChangesAsync();
-
-        // Generate JWT token
-        var token = _jwtService.GenerateToken(user.UserId, user.Email, user.UserType.ToString());
-
-        var response = new AuthResponse
-        {
-            Token = token,
-            User = new UserInfo
-            {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                UserType = user.UserType,
-                ProfileBio = user.ProfileBio
-            }
-        };
-
-        return CreatedAtAction(nameof(Register), response);
+        return BadRequest(ModelState);
     }
 
-    /// <summary>
-    /// Login and get JWT token
-    /// </summary>
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    // Check if phone number is provided
+    if (string.IsNullOrWhiteSpace(request.PhoneNumber))
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
-
-        // Find user by email
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user == null)
-        {
-            return Unauthorized(new { message = "Invalid email or password" });
-        }
-
-        // Verify password
-        if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-        {
-            return Unauthorized(new { message = "Invalid email or password" });
-        }
-
-        // Update last login
-        user.LastLogin = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
-
-        // Generate JWT token
-        var token = _jwtService.GenerateToken(user.UserId, user.Email, user.UserType.ToString());
-
-        var response = new AuthResponse
-        {
-            Token = token,
-            User = new UserInfo
-            {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                UserType = user.UserType,
-                ProfileBio = user.ProfileBio
-            }
-        };
-
-        return Ok(response);
+        return BadRequest(new { message = "Phone number is required" });
     }
 
-    /// <summary>
-    /// Get current user info from JWT token
-    /// </summary>
-    [HttpGet("me")]
-    [Authorize]
-    public async Task<IActionResult> GetMe()
+    // ❌ Removed: PhoneVerifications check
+    // We no longer require the phone number to be pre-verified via OTP here
+
+    // Check if email already exists
+    var existingUserByEmail = await _context.Users
+        .FirstOrDefaultAsync(u => u.Email == request.Email);
+    if (existingUserByEmail != null)
     {
-        var userId = _jwtService.GetUserIdFromClaims(User);
-        if (userId == null)
-        {
-            return Unauthorized(new { message = "Invalid token" });
-        }
+        return BadRequest(new { message = "Email already exists" });
+    }
 
-        var user = await _context.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.UserId == userId.Value);
+    // Check if phone number already exists in Users table
+    var existingUserByPhone = await _context.Users
+        .FirstOrDefaultAsync(u => u.PhoneNumber == request.PhoneNumber);
+    if (existingUserByPhone != null)
+    {
+        return BadRequest(new { message = "Phone number is already registered" });
+    }
 
-        if (user == null)
-        {
-            return NotFound(new { message = "User not found" });
-        }
+    // Hash password using BCrypt
+    var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-        var userInfo = new UserInfo
+    // Create new user
+    var user = new User
+    {
+        FullName = request.FullName,
+        Email = request.Email,
+        PasswordHash = passwordHash,
+        PhoneNumber = request.PhoneNumber,
+        UserType = request.UserType,
+        CreatedAt = DateTime.UtcNow
+        // ProfileBio stays null unless you add it to RegisterRequest and set it here
+    };
+
+    _context.Users.Add(user);
+    await _context.SaveChangesAsync();
+
+    // Generate JWT token
+    var token = _jwtService.GenerateToken(
+        user.UserId,
+        user.Email,
+        user.UserType.ToString()
+    );
+
+    var response = new AuthResponse
+    {
+        Token = token,
+        User = new UserInfo
         {
             UserId = user.UserId,
             FullName = user.FullName,
@@ -232,10 +145,12 @@ public class AuthController : ControllerBase
             PhoneNumber = user.PhoneNumber,
             UserType = user.UserType,
             ProfileBio = user.ProfileBio
-        };
+        }
+    };
 
-        return Ok(userInfo);
-    }
+    // 201 Created with token + user info
+    return CreatedAtAction(nameof(Register), response);
+}
 
     /// <summary>
     /// Send OTP to phone number
