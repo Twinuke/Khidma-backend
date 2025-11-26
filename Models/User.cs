@@ -38,6 +38,17 @@ public class User
     [Column(TypeName = "TEXT")]
     public string? ProfileBio { get; set; }
 
+    // New field for Profile Image (can store Base64 or URL)
+    [Column(TypeName = "TEXT")]
+    public string? ProfileImageUrl { get; set; }
+
+    // Location Fields
+    [StringLength(100)]
+    public string? City { get; set; } 
+
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
