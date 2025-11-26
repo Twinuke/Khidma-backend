@@ -20,8 +20,6 @@ public class AppDbContext : DbContext
     public DbSet<ChatbotLog> ChatbotLogs { get; set; } = null!;
     public DbSet<Skill> Skills { get; set; } = null!;
     public DbSet<UserSkill> UserSkills { get; set; } = null!;
-    public DbSet<OtpCode> OtpCodes { get; set; } = null!;
-    public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
     public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

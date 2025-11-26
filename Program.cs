@@ -27,7 +27,7 @@ public class Program
         // JWT Service
         builder.Services.AddScoped<JwtService>();
 
-        // Email Service
+        // Email Service (for email OTP)
         builder.Services.AddScoped<EmailService>();
 
         // JWT Authentication
