@@ -27,6 +27,11 @@ public class Bid
     [Range(0, double.MaxValue, ErrorMessage = "Bid amount must be a positive value")]
     public decimal BidAmount { get; set; }
 
+    // --- NEW FIELD ---
+    [Required]
+    public int DeliveryTimeDays { get; set; }
+    // -----------------
+
     [Required]
     [Column(TypeName = "TEXT")]
     public string ProposalText { get; set; } = string.Empty;

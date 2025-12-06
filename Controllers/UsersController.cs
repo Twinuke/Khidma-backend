@@ -5,6 +5,19 @@ using Microsoft.EntityFrameworkCore;
 
 namespace khidma_backend.Controllers;
 
+// DTO for Profile Updates (Prevents overwriting password/sensitive data)
+public class UserUpdateDto
+{
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? PhoneNumber { get; set; }
+    public string? ProfileBio { get; set; }
+    public string? City { get; set; }
+    public string? ProfileImageUrl { get; set; }
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+}
+
 [ApiController]
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
@@ -32,46 +45,37 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    // GET: api/Users/by-email/{email}
-    [HttpGet("by-email/{email}")]
-    public async Task<ActionResult<User>> GetUserByEmail(string email)
-    {
-        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Email == email);
-        if (user == null) return NotFound();
-        return Ok(user);
-    }
-
-    // GET: api/Users/by-type/{userType}
-    [HttpGet("by-type/{userType}")]
-    public async Task<ActionResult<IEnumerable<User>>> GetUsersByType(UserType userType)
-    {
-        var users = await _context.Users.AsNoTracking()
-            .Where(u => u.UserType == userType)
-            .ToListAsync();
-        return Ok(users);
-    }
-
-    // Note: User registration is handled by AuthController.Register
-
     // PUT: api/Users/{id}
+    // ✅ FIX: Accepts UserUpdateDto instead of full User to avoid PasswordHash validation errors
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateUser(int id, [FromBody] User user)
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UserUpdateDto dto)
     {
-        if (id != user.UserId) return BadRequest();
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var existingUser = await _context.Users.FindAsync(id);
         if (existingUser == null) return NotFound();
 
         // Check if email is being changed and if it already exists
-        if (user.Email != existingUser.Email)
+        if (dto.Email != existingUser.Email)
         {
-            var emailExists = await _context.Users.AnyAsync(u => u.Email == user.Email);
+            var emailExists = await _context.Users.AnyAsync(u => u.Email == dto.Email);
             if (emailExists) return BadRequest("Email already exists");
         }
 
-        _context.Entry(existingUser).CurrentValues.SetValues(user);
+        // Update fields safely
+        existingUser.FullName = dto.FullName;
+        existingUser.Email = dto.Email;
+        existingUser.PhoneNumber = dto.PhoneNumber;
+        existingUser.ProfileBio = dto.ProfileBio;
+        existingUser.City = dto.City;
+        existingUser.ProfileImageUrl = dto.ProfileImageUrl;
+        existingUser.Latitude = dto.Latitude;
+        existingUser.Longitude = dto.Longitude;
+
+        // Mark as modified and save
+        _context.Entry(existingUser).State = EntityState.Modified;
         await _context.SaveChangesAsync();
+
         return NoContent();
     }
 

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251206154423_UpdateJobBidModels")]
+    partial class UpdateJobBidModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,9 +35,6 @@ namespace khidma_backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime(6)")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-
-                    b.Property<int>("DeliveryTimeDays")
-                        .HasColumnType("int");
 
                     b.Property<int>("FreelancerId")
                         .HasColumnType("int");
@@ -188,14 +187,6 @@ namespace khidma_backend.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("ExperienceLevel")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.Property<bool>("IsRemote")
-                        .HasColumnType("tinyint(1)");
-
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -244,42 +235,6 @@ namespace khidma_backend.Migrations
                     b.HasIndex("SenderId");
 
                     b.ToTable("Messages");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("NotificationId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Payment", b =>
@@ -382,9 +337,6 @@ namespace khidma_backend.Migrations
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    b.Property<decimal>("Balance")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("City")
                         .HasMaxLength(100)
@@ -549,17 +501,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Sender");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.Notification", b =>
-                {
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany("Notifications")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.Payment", b =>
                 {
                     b.HasOne("khidma_backend.Models.Contract", "Contract")
@@ -653,8 +594,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("ContractsAsFreelancer");
 
                     b.Navigation("Jobs");
-
-                    b.Navigation("Notifications");
 
                     b.Navigation("Payments");
 

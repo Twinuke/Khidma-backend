@@ -20,10 +20,8 @@ public class AppDbContext : DbContext
     public DbSet<ChatbotLog> ChatbotLogs { get; set; } = null!;
     public DbSet<Skill> Skills { get; set; } = null!;
     public DbSet<UserSkill> UserSkills { get; set; } = null!;
-    public DbSet<OtpCode> OtpCodes { get; set; } = null!;
-    public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
     public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
-
+public DbSet<Notification> Notifications { get; set; } = null!;
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -199,6 +197,16 @@ public class AppDbContext : DbContext
             entity.HasKey(e => e.SkillId);
             entity.HasIndex(e => e.SkillName).IsUnique();
         });
+        modelBuilder.Entity<Notification>(entity =>
+{
+    entity.HasKey(e => e.NotificationId);
+    entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+    
+    entity.HasOne(n => n.User)
+          .WithMany(u => u.Notifications)
+          .HasForeignKey(n => n.UserId)
+          .OnDelete(DeleteBehavior.Cascade);
+});
 
         // ========== UserSkill Configuration (Many-to-Many) ==========
         modelBuilder.Entity<UserSkill>(entity =>

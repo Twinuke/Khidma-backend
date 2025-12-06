@@ -38,16 +38,18 @@ public class User
     [Column(TypeName = "TEXT")]
     public string? ProfileBio { get; set; }
 
-    // New field for Profile Image (can store Base64 or URL)
     [Column(TypeName = "TEXT")]
     public string? ProfileImageUrl { get; set; }
 
-    // Location Fields
     [StringLength(100)]
     public string? City { get; set; } 
 
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+
+    // ✅ NEW: User Balance
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal Balance { get; set; } = 0.00m;
 
     [Required]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -55,36 +57,18 @@ public class User
     public DateTime? LastLogin { get; set; }
 
     // Navigation properties
-    [JsonIgnore]
-    public ICollection<Job>? Jobs { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Bid>? Bids { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Review>? ReviewsWritten { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Review>? ReviewsReceived { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Payment>? Payments { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Message>? SentMessages { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Message>? ReceivedMessages { get; set; }
-
-    [JsonIgnore]
-    public ICollection<UserSkill>? UserSkills { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Contract>? ContractsAsFreelancer { get; set; }
-
-    [JsonIgnore]
-    public ICollection<Contract>? ContractsAsClient { get; set; }
-
-    [JsonIgnore]
-    public ICollection<ChatbotLog>? ChatbotLogs { get; set; }
+    [JsonIgnore] public ICollection<Job>? Jobs { get; set; }
+    [JsonIgnore] public ICollection<Bid>? Bids { get; set; }
+    [JsonIgnore] public ICollection<Review>? ReviewsWritten { get; set; }
+    [JsonIgnore] public ICollection<Review>? ReviewsReceived { get; set; }
+    [JsonIgnore] public ICollection<Payment>? Payments { get; set; }
+    [JsonIgnore] public ICollection<Message>? SentMessages { get; set; }
+    [JsonIgnore] public ICollection<Message>? ReceivedMessages { get; set; }
+    [JsonIgnore] public ICollection<UserSkill>? UserSkills { get; set; }
+    [JsonIgnore] public ICollection<Contract>? ContractsAsFreelancer { get; set; }
+    [JsonIgnore] public ICollection<Contract>? ContractsAsClient { get; set; }
+    [JsonIgnore] public ICollection<ChatbotLog>? ChatbotLogs { get; set; }
+    
+    // ✅ NEW: Navigation for Notifications
+    [JsonIgnore] public ICollection<Notification>? Notifications { get; set; }
 }

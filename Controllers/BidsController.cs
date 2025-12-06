@@ -68,17 +68,27 @@ public class BidsController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        // Verify job exists
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
 
-        // Verify freelancer exists
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer == null) return BadRequest("Freelancer not found");
 
         bid.CreatedAt = DateTime.UtcNow;
         bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
+
+        // ✅ NOTIFICATION: Bid Placed
+        var notif = new Notification
+        {
+            UserId = bid.FreelancerId,
+            Title = "Bid Placed",
+            Message = $"You placed a bid of ${bid.BidAmount} on '{job.Title}'.",
+            Type = NotificationType.BidPlaced,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Notifications.Add(notif);
+
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
@@ -98,12 +108,13 @@ public class BidsController : ControllerBase
         return NoContent();
     }
 
-    // PUT: api/Bids/{id}/accept - Accept bid and create contract automatically
+    // PUT: api/Bids/{id}/accept
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
         var bid = await _context.Bids
             .Include(b => b.Job)
+            .Include(b => b.Freelancer)
             .FirstOrDefaultAsync(b => b.BidId == id);
         
         if (bid == null) return NotFound();
@@ -113,7 +124,6 @@ public class BidsController : ControllerBase
             return BadRequest("Bid is not in pending status");
         }
 
-        // Verify job exists and is open
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
         if (job.Status != JobStatus.Open)
@@ -121,10 +131,10 @@ public class BidsController : ControllerBase
             return BadRequest("Job is not open for bidding");
         }
 
-        // Update bid status
+        // 1. Update Bid Status
         bid.Status = BidStatus.Accepted;
 
-        // Create contract automatically
+        // 2. Create Contract
         var contract = new Contract
         {
             JobId = bid.JobId,
@@ -134,13 +144,30 @@ public class BidsController : ControllerBase
             StartDate = DateTime.UtcNow,
             Status = ContractStatus.Active
         };
-
         _context.Contracts.Add(contract);
 
-        // Update job status to Assigned
+        // 3. Update Job Status
         job.Status = JobStatus.Assigned;
 
-        // Reject all other pending bids for this job
+        // 4. ✅ UPDATE BALANCE
+        var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
+        if (freelancer != null) 
+        {
+            freelancer.Balance += bid.BidAmount;
+        }
+
+        // 5. ✅ NOTIFICATION: Bid Accepted
+        var notif = new Notification
+        {
+            UserId = bid.FreelancerId,
+            Title = "Bid Accepted!",
+            Message = $"Congrats! Your bid for '{job.Title}' was accepted. Balance updated by ${bid.BidAmount}.",
+            Type = NotificationType.BidAccepted,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Notifications.Add(notif);
+
+        // 6. Reject other bids
         var otherBids = await _context.Bids
             .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
             .ToListAsync();

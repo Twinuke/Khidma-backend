@@ -5,8 +5,8 @@ using Microsoft.Extensions.Configuration;
 namespace khidma_backend.Services;
 
 /// <summary>
-/// Service for sending emails via SMTP
-/// Supports Gmail SMTP and other SMTP providers
+/// Simple SMTP email service for sending OTP codes.
+/// Uses Gmail or any other SMTP provider based on configuration.
 /// </summary>
 public class EmailService
 {
@@ -24,15 +24,16 @@ public class EmailService
         _configuration = configuration;
         _smtpHost = _configuration["Smtp:Host"] ?? "smtp.gmail.com";
         _smtpPort = int.Parse(_configuration["Smtp:Port"] ?? "587");
-        _smtpUsername = _configuration["Smtp:Username"] ?? "";
-        _smtpPassword = _configuration["Smtp:Password"] ?? "";
+        _smtpUsername = _configuration["Smtp:Username"] ?? string.Empty;
+        _smtpPassword = _configuration["Smtp:Password"] ?? string.Empty;
         _fromEmail = _configuration["Smtp:FromEmail"] ?? _smtpUsername;
         _fromName = _configuration["Smtp:FromName"] ?? "Khidma";
         _enableSsl = bool.Parse(_configuration["Smtp:EnableSsl"] ?? "true");
     }
 
     /// <summary>
-    /// Send email with OTP code
+    /// Send email with OTP code. Falls back to console logging in development
+    /// when SMTP credentials are not configured.
     /// </summary>
     public async Task<bool> SendOtpEmailAsync(string toEmail, string otpCode)
     {
@@ -64,40 +65,40 @@ public class EmailService
     }
 
     /// <summary>
-    /// Send generic email
+    /// Generic email sender.
     /// </summary>
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string body, bool isHtml = true)
     {
         try
         {
-            // In development, if SMTP is not configured, log to console
+            // If SMTP credentials are not configured, log to console (dev fallback)
             if (string.IsNullOrEmpty(_smtpUsername) || string.IsNullOrEmpty(_smtpPassword))
             {
-                Console.WriteLine($"=== EMAIL (Development Mode) ===");
+                Console.WriteLine("=== EMAIL (Development Mode) ===");
                 Console.WriteLine($"To: {toEmail}");
                 Console.WriteLine($"Subject: {subject}");
                 Console.WriteLine($"Body: {body}");
-                Console.WriteLine($"===============================");
-                return true; // Return true in development to allow testing
+                Console.WriteLine("================================");
+                return true;
             }
 
-            using (var client = new SmtpClient(_smtpHost, _smtpPort))
+            using var client = new SmtpClient(_smtpHost, _smtpPort)
             {
-                client.EnableSsl = _enableSsl;
-                client.Credentials = new NetworkCredential(_smtpUsername, _smtpPassword);
+                EnableSsl = _enableSsl,
+                Credentials = new NetworkCredential(_smtpUsername, _smtpPassword)
+            };
 
-                using (var message = new MailMessage())
-                {
-                    message.From = new MailAddress(_fromEmail, _fromName);
-                    message.To.Add(toEmail);
-                    message.Subject = subject;
-                    message.Body = body;
-                    message.IsBodyHtml = isHtml;
+            using var message = new MailMessage
+            {
+                From = new MailAddress(_fromEmail, _fromName),
+                Subject = subject,
+                Body = body,
+                IsBodyHtml = isHtml
+            };
 
-                    await client.SendMailAsync(message);
-                }
-            }
+            message.To.Add(toEmail);
 
+            await client.SendMailAsync(message);
             return true;
         }
         catch (Exception ex)
