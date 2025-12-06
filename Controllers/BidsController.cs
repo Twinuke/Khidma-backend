@@ -37,27 +37,23 @@ public class BidsController : ControllerBase
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForJob(int jobId)
     {
         var bids = await _context.Bids.AsNoTracking()
+            .Include(b => b.Freelancer) // Include Freelancer info for the Client view
             .Where(b => b.JobId == jobId)
+            .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
         return Ok(bids);
     }
 
     // GET: api/Bids/freelancer/{freelancerId}
+    // ✅ UPDATED: Now includes Job and Client data for the "My Bids" page
     [HttpGet("freelancer/{freelancerId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByFreelancer(int freelancerId)
     {
         var bids = await _context.Bids.AsNoTracking()
+            .Include(b => b.Job)
+            .ThenInclude(j => j.Client) // Need Client name for the UI
             .Where(b => b.FreelancerId == freelancerId)
-            .ToListAsync();
-        return Ok(bids);
-    }
-
-    // GET: api/Bids/by-status/{status}
-    [HttpGet("by-status/{status}")]
-    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByStatus(BidStatus status)
-    {
-        var bids = await _context.Bids.AsNoTracking()
-            .Where(b => b.Status == status)
+            .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
         return Ok(bids);
     }
@@ -68,8 +64,17 @@ public class BidsController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        // Check if job exists
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
+
+        // ✅ CHECK: Prevent duplicate bids
+        var existingBid = await _context.Bids
+            .AnyAsync(b => b.JobId == bid.JobId && b.FreelancerId == bid.FreelancerId);
+        if (existingBid)
+        {
+            return BadRequest("You have already placed a bid on this job.");
+        }
 
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer == null) return BadRequest("Freelancer not found");
@@ -78,7 +83,7 @@ public class BidsController : ControllerBase
         bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
 
-        // ✅ NOTIFICATION: Bid Placed
+        // Notification: Bid Placed
         var notif = new Notification
         {
             UserId = bid.FreelancerId,
@@ -93,22 +98,7 @@ public class BidsController : ControllerBase
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
-    // PUT: api/Bids/{id}
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateBid(int id, [FromBody] Bid bid)
-    {
-        if (id != bid.BidId) return BadRequest();
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        var existingBid = await _context.Bids.FindAsync(id);
-        if (existingBid == null) return NotFound();
-
-        _context.Entry(existingBid).CurrentValues.SetValues(bid);
-        await _context.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // PUT: api/Bids/{id}/accept
+    // PUT: api/Bids/{id}/accept (Keep existing logic)
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
@@ -118,20 +108,12 @@ public class BidsController : ControllerBase
             .FirstOrDefaultAsync(b => b.BidId == id);
         
         if (bid == null) return NotFound();
-        
-        if (bid.Status != BidStatus.Pending)
-        {
-            return BadRequest("Bid is not in pending status");
-        }
+        if (bid.Status != BidStatus.Pending) return BadRequest("Bid is not pending");
 
         var job = await _context.Jobs.FindAsync(bid.JobId);
-        if (job == null) return BadRequest("Job not found");
-        if (job.Status != JobStatus.Open)
-        {
-            return BadRequest("Job is not open for bidding");
-        }
+        if (job == null || job.Status != JobStatus.Open) return BadRequest("Job is not open");
 
-        // 1. Update Bid Status
+        // 1. Update Bid
         bid.Status = BidStatus.Accepted;
 
         // 2. Create Contract
@@ -146,60 +128,31 @@ public class BidsController : ControllerBase
         };
         _context.Contracts.Add(contract);
 
-        // 3. Update Job Status
+        // 3. Update Job
         job.Status = JobStatus.Assigned;
 
-        // 4. ✅ UPDATE BALANCE
+        // 4. Update Balance
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
-        if (freelancer != null) 
-        {
-            freelancer.Balance += bid.BidAmount;
-        }
+        if (freelancer != null) freelancer.Balance += bid.BidAmount;
 
-        // 5. ✅ NOTIFICATION: Bid Accepted
+        // 5. Notify Freelancer
         var notif = new Notification
         {
             UserId = bid.FreelancerId,
             Title = "Bid Accepted!",
-            Message = $"Congrats! Your bid for '{job.Title}' was accepted. Balance updated by ${bid.BidAmount}.",
+            Message = $"Congrats! Your bid for '{job.Title}' was accepted.",
             Type = NotificationType.BidAccepted,
             CreatedAt = DateTime.UtcNow
         };
         _context.Notifications.Add(notif);
 
-        // 6. Reject other bids
+        // 6. Reject others
         var otherBids = await _context.Bids
             .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
             .ToListAsync();
-        
-        foreach (var otherBid in otherBids)
-        {
-            otherBid.Status = BidStatus.Rejected;
-        }
+        foreach (var other in otherBids) other.Status = BidStatus.Rejected;
 
         await _context.SaveChangesAsync();
         return Ok(contract);
-    }
-
-    // PUT: api/Bids/{id}/reject
-    [HttpPut("{id}/reject")]
-    public async Task<IActionResult> RejectBid(int id)
-    {
-        var bid = await _context.Bids.FindAsync(id);
-        if (bid == null) return NotFound();
-        bid.Status = BidStatus.Rejected;
-        await _context.SaveChangesAsync();
-        return NoContent();
-    }
-
-    // DELETE: api/Bids/{id}
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteBid(int id)
-    {
-        var bid = await _context.Bids.FindAsync(id);
-        if (bid == null) return NotFound();
-        _context.Bids.Remove(bid);
-        await _context.SaveChangesAsync();
-        return NoContent();
     }
 }

@@ -9,29 +9,21 @@ public class Message
     [Key]
     public int MessageId { get; set; }
 
-    [Required]
+    public int ConversationId { get; set; }
+
     public int SenderId { get; set; }
-
+    
     [Required]
-    public int ReceiverId { get; set; }
+    public string Content { get; set; } = string.Empty;
 
-    public int? JobId { get; set; }
+    public DateTime SentAt { get; set; } = DateTime.UtcNow;
+    
+    public bool IsRead { get; set; } = false;
 
-    [Required]
-    [Column(TypeName = "TEXT")]
-    public string MessageText { get; set; } = string.Empty;
-
-    [Required]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    // Navigation properties
+    // Navigation
+    [JsonIgnore]
+    public Conversation? Conversation { get; set; }
+    
     [JsonIgnore]
     public User? Sender { get; set; }
-
-    [JsonIgnore]
-    public User? Receiver { get; set; }
-
-    [JsonIgnore]
-    public Job? Job { get; set; }
 }
-

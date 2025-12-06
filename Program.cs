@@ -17,7 +17,7 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-
+builder.Services.AddSignalR();
         // EF Core DbContext registration
         var connectionString = builder.Configuration.GetConnectionString("KhidmaDbContext") 
             ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -83,7 +83,7 @@ public class Program
         app.UseSwaggerUI();
 
         app.UseCors(CorsPolicyName);
-
+app.MapHub<khidma_backend.Hubs.ChatHub>("/chatHub");
         app.UseAuthentication();
         app.UseAuthorization();
 

@@ -20,8 +20,12 @@ public class AppDbContext : DbContext
     public DbSet<ChatbotLog> ChatbotLogs { get; set; } = null!;
     public DbSet<Skill> Skills { get; set; } = null!;
     public DbSet<UserSkill> UserSkills { get; set; } = null!;
+    public DbSet<OtpCode> OtpCodes { get; set; } = null!;
+    public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
     public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
-public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<Conversation> Conversations { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -33,69 +37,81 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.UserType).HasConversion<int>();
+            entity.Property(e => e.Balance).HasColumnType("decimal(18,2)");
         });
 
-        // User -> Jobs (one-to-many)
+        // User Relationships
         modelBuilder.Entity<Job>()
             .HasOne(j => j.Client)
             .WithMany(u => u.Jobs)
             .HasForeignKey(j => j.ClientId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // User -> Bids (one-to-many)
         modelBuilder.Entity<Bid>()
             .HasOne(b => b.Freelancer)
             .WithMany(u => u.Bids)
             .HasForeignKey(b => b.FreelancerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // User -> ReviewsWritten (one-to-many)
         modelBuilder.Entity<Review>()
             .HasOne(r => r.Reviewer)
             .WithMany(u => u.ReviewsWritten)
             .HasForeignKey(r => r.ReviewerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // User -> ReviewsReceived (one-to-many)
         modelBuilder.Entity<Review>()
             .HasOne(r => r.Reviewee)
             .WithMany(u => u.ReviewsReceived)
             .HasForeignKey(r => r.RevieweeId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // User -> SentMessages (one-to-many)
-        modelBuilder.Entity<Message>()
-            .HasOne(m => m.Sender)
-            .WithMany(u => u.SentMessages)
-            .HasForeignKey(m => m.SenderId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // User -> ReceivedMessages (one-to-many)
-        modelBuilder.Entity<Message>()
-            .HasOne(m => m.Receiver)
-            .WithMany(u => u.ReceivedMessages)
-            .HasForeignKey(m => m.ReceiverId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // User -> ChatbotLogs (one-to-many)
         modelBuilder.Entity<ChatbotLog>()
             .HasOne(c => c.User)
             .WithMany(u => u.ChatbotLogs)
             .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // User -> ContractsAsFreelancer (one-to-many)
         modelBuilder.Entity<Contract>()
             .HasOne(c => c.Freelancer)
             .WithMany(u => u.ContractsAsFreelancer)
             .HasForeignKey(c => c.FreelancerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // User -> ContractsAsClient (one-to-many)
         modelBuilder.Entity<Contract>()
             .HasOne(c => c.Client)
             .WithMany(u => u.ContractsAsClient)
             .HasForeignKey(c => c.ClientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ========== Conversation Configuration ==========
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.User1)
+            .WithMany()
+            .HasForeignKey(c => c.User1Id)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Conversation>()
+            .HasOne(c => c.User2)
+            .WithMany()
+            .HasForeignKey(c => c.User2Id)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // ========== Message Configuration ==========
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.HasKey(e => e.MessageId);
+        });
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Conversation)
+            .WithMany(c => c.Messages)
+            .HasForeignKey(m => m.ConversationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.Sender)
+            .WithMany(u => u.SentMessages)
+            .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // ========== Job Configuration ==========
@@ -104,29 +120,20 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.HasKey(e => e.JobId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.Status).HasConversion<int>();
-            entity.Property(e => e.Budget).HasPrecision(18, 2);
+            entity.Property(e => e.Budget).HasColumnType("decimal(18,2)");
         });
 
-        // Job -> Bids (one-to-many)
         modelBuilder.Entity<Bid>()
             .HasOne(b => b.Job)
             .WithMany(j => j.Bids)
             .HasForeignKey(b => b.JobId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Job -> Contracts (one-to-many)
         modelBuilder.Entity<Contract>()
             .HasOne(c => c.Job)
             .WithMany(j => j.Contracts)
             .HasForeignKey(c => c.JobId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // Job -> Messages (one-to-many, optional)
-        modelBuilder.Entity<Message>()
-            .HasOne(m => m.Job)
-            .WithMany(j => j.Messages)
-            .HasForeignKey(m => m.JobId)
-            .OnDelete(DeleteBehavior.SetNull);
 
         // ========== Bid Configuration ==========
         modelBuilder.Entity<Bid>(entity =>
@@ -134,7 +141,7 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.HasKey(e => e.BidId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.Status).HasConversion<int>();
-            entity.Property(e => e.BidAmount).HasPrecision(18, 2);
+            entity.Property(e => e.BidAmount).HasColumnType("decimal(18,2)");
         });
 
         // ========== Contract Configuration ==========
@@ -143,22 +150,8 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.HasKey(e => e.ContractId);
             entity.Property(e => e.StartDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.Status).HasConversion<int>();
-            entity.Property(e => e.EscrowAmount).HasPrecision(18, 2);
+            entity.Property(e => e.EscrowAmount).HasColumnType("decimal(18,2)");
         });
-
-        // Contract -> Payments (one-to-many)
-        modelBuilder.Entity<Payment>()
-            .HasOne(p => p.Contract)
-            .WithMany(c => c.Payments)
-            .HasForeignKey(p => p.ContractId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Contract -> Reviews (one-to-many)
-        modelBuilder.Entity<Review>()
-            .HasOne(r => r.Contract)
-            .WithMany(c => c.Reviews)
-            .HasForeignKey(r => r.ContractId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         // ========== Payment Configuration ==========
         modelBuilder.Entity<Payment>(entity =>
@@ -167,8 +160,14 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.Property(e => e.TransactionDate).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.PaymentMethod).HasConversion<int>();
             entity.Property(e => e.PaymentStatus).HasConversion<int>();
-            entity.Property(e => e.Amount).HasPrecision(18, 2);
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
         });
+
+        modelBuilder.Entity<Payment>()
+            .HasOne(p => p.Contract)
+            .WithMany(c => c.Payments)
+            .HasForeignKey(p => p.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ========== Review Configuration ==========
         modelBuilder.Entity<Review>(entity =>
@@ -177,12 +176,11 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
         });
 
-        // ========== Message Configuration ==========
-        modelBuilder.Entity<Message>(entity =>
-        {
-            entity.HasKey(e => e.MessageId);
-            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-        });
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.Contract)
+            .WithMany(c => c.Reviews)
+            .HasForeignKey(r => r.ContractId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ========== ChatbotLog Configuration ==========
         modelBuilder.Entity<ChatbotLog>(entity =>
@@ -197,18 +195,8 @@ public DbSet<Notification> Notifications { get; set; } = null!;
             entity.HasKey(e => e.SkillId);
             entity.HasIndex(e => e.SkillName).IsUnique();
         });
-        modelBuilder.Entity<Notification>(entity =>
-{
-    entity.HasKey(e => e.NotificationId);
-    entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-    
-    entity.HasOne(n => n.User)
-          .WithMany(u => u.Notifications)
-          .HasForeignKey(n => n.UserId)
-          .OnDelete(DeleteBehavior.Cascade);
-});
 
-        // ========== UserSkill Configuration (Many-to-Many) ==========
+        // ========== UserSkill Configuration ==========
         modelBuilder.Entity<UserSkill>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.SkillId });
@@ -222,6 +210,17 @@ public DbSet<Notification> Notifications { get; set; } = null!;
                 .WithMany(s => s.UserSkills)
                 .HasForeignKey(us => us.SkillId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ========== Notification Configuration ==========
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+            entity.HasOne(n => n.User)
+                  .WithMany(u => u.Notifications)
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
