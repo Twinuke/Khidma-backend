@@ -23,7 +23,6 @@ public class AuthController : ControllerBase
         _emailService = emailService;
     }
 
-    // DTOs for request/response
     public class RegisterRequest
     {
         [Required]
@@ -45,7 +44,7 @@ public class AuthController : ControllerBase
         [Required]
         public UserType UserType { get; set; }
 
-        // ✅ FIX: Added ProfileBio so it can be saved during registration
+        // ✅ FIX: Added ProfileBio to DTO
         public string? ProfileBio { get; set; }
     }
 
@@ -62,17 +61,7 @@ public class AuthController : ControllerBase
     public class AuthResponse
     {
         public string Token { get; set; } = string.Empty;
-        public UserInfo User { get; set; } = null!;
-    }
-
-    public class UserInfo
-    {
-        public int UserId { get; set; }
-        public string FullName { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string? PhoneNumber { get; set; }
-        public UserType UserType { get; set; }
-        public string? ProfileBio { get; set; }
+        public object User { get; set; } = null!;
     }
 
     [HttpPost("register")]
@@ -116,7 +105,8 @@ public class AuthController : ControllerBase
             PhoneNumber = request.PhoneNumber,
             UserType = request.UserType,
             CreatedAt = DateTime.UtcNow,
-            ProfileBio = request.ProfileBio // ✅ FIX: Assigning Bio
+            // ✅ FIX: Assign Bio from request
+            ProfileBio = request.ProfileBio 
         };
 
         _context.Users.Add(user);
@@ -132,24 +122,47 @@ public class AuthController : ControllerBase
         var response = new AuthResponse
         {
             Token = token,
-            User = new UserInfo
+            User = new 
             {
-                UserId = user.UserId,
-                FullName = user.FullName,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                UserType = user.UserType,
-                ProfileBio = user.ProfileBio
+                user.UserId,
+                user.FullName,
+                user.Email,
+                user.PhoneNumber,
+                user.UserType,
+                user.ProfileBio,
+                user.ProfileImageUrl
             }
         };
 
         return CreatedAtAction(nameof(Register), response);
     }
 
-    // ... (Keep the rest of your OTP endpoints: SendOtp, VerifyOtp, VerifyPhone, etc. exactly as they were) ...
-    // To save space, I am not repeating the OTP logic here, but DO NOT DELETE IT from your file.
-    // Just ensure the RegisterRequest class and Register method are updated as above.
-    
-    // --- COPY PASTE THE REST OF YOUR OTP METHODS HERE IF YOU OVERWRITE THE FILE ---
-    // (SendOtp, VerifyOtp, VerifyPhone, ConfirmOtp, RequestEmailOtp, VerifyEmailOtp, ResendEmailOtp)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        {
+            return BadRequest(new { message = "Invalid email or password" });
+        }
+
+        var token = _jwtService.GenerateToken(user.UserId, user.Email, user.UserType.ToString());
+
+        return Ok(new 
+        {
+            token,
+            user = new 
+            {
+                user.UserId,
+                user.FullName,
+                user.Email,
+                user.PhoneNumber,
+                user.UserType,
+                user.ProfileBio,
+                user.ProfileImageUrl
+            }
+        });
+    }
 }
