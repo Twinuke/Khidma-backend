@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251207185227_notificaitons")]
+    partial class notificaitons
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -437,57 +439,6 @@ namespace khidma_backend.Migrations
                     b.ToTable("PhoneVerifications");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.PostComment", b =>
-                {
-                    b.Property<int>("CommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CommentId");
-
-                    b.HasIndex("PostId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PostComments");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.PostLike", b =>
-                {
-                    b.Property<int>("LikeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("LikeId");
-
-                    b.HasIndex("PostId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("PostLikes");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.Review", b =>
                 {
                     b.Property<int>("ReviewId")
@@ -545,40 +496,6 @@ namespace khidma_backend.Migrations
                         .IsUnique();
 
                     b.ToTable("Skills");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.SocialPost", b =>
-                {
-                    b.Property<int>("PostId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-
-                    b.Property<int?>("JobId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("JobTitle")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("SecondPartyName")
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("PostId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("SocialPosts");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.User", b =>
@@ -852,44 +769,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Contract");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.PostComment", b =>
-                {
-                    b.HasOne("khidma_backend.Models.SocialPost", "Post")
-                        .WithMany("Comments")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.PostLike", b =>
-                {
-                    b.HasOne("khidma_backend.Models.SocialPost", "Post")
-                        .WithMany("Likes")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.Review", b =>
                 {
                     b.HasOne("khidma_backend.Models.Contract", "Contract")
@@ -915,17 +794,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Reviewee");
 
                     b.Navigation("Reviewer");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.SocialPost", b =>
-                {
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.UserConnection", b =>
@@ -990,13 +858,6 @@ namespace khidma_backend.Migrations
             modelBuilder.Entity("khidma_backend.Models.Skill", b =>
                 {
                     b.Navigation("UserSkills");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.SocialPost", b =>
-                {
-                    b.Navigation("Comments");
-
-                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.User", b =>

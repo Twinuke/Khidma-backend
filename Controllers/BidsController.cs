@@ -47,7 +47,7 @@ public class BidsController : ControllerBase
     {
         var bids = await _context.Bids
             .AsNoTracking()
-            .Include(b => b.Freelancer) // Include Freelancer info for the Client view
+            .Include(b => b.Freelancer) 
             .Where(b => b.JobId == jobId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -61,7 +61,7 @@ public class BidsController : ControllerBase
         var bids = await _context.Bids
             .AsNoTracking()
             .Include(b => b.Job)
-            .ThenInclude(j => j.Client) // Include Client name for the UI
+            .ThenInclude(j => j.Client) 
             .Where(b => b.FreelancerId == freelancerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
@@ -69,27 +69,22 @@ public class BidsController : ControllerBase
     }
 
     // POST: api/Bids
-    // ✅ THIS IS THE MISSING ENDPOINT CAUSING 404
     [HttpPost]
     public async Task<ActionResult<Bid>> CreateBid([FromBody] Bid bid)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        // Check if job exists
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
 
-        // Check if freelancer exists
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer == null) return BadRequest("Freelancer not found");
 
-        // ✅ Prevent Clients from bidding
         if (freelancer.UserType == UserType.Client)
         {
             return BadRequest("Clients cannot place bids on jobs.");
         }
 
-        // ✅ Prevent duplicate bids
         var existingBid = await _context.Bids
             .AnyAsync(b => b.JobId == bid.JobId && b.FreelancerId == bid.FreelancerId);
         if (existingBid)
@@ -101,7 +96,6 @@ public class BidsController : ControllerBase
         bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
 
-        // Notification: Bid Placed
         var notif = new Notification
         {
             UserId = bid.FreelancerId,
@@ -116,12 +110,13 @@ public class BidsController : ControllerBase
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
-    // PUT: api/Bids/{id}/accept
+    // PUT: api/Bids/{id}/accept (UPDATED WITH SOCIAL POST)
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
         var bid = await _context.Bids
             .Include(b => b.Job)
+            .ThenInclude(j => j.Client)
             .Include(b => b.Freelancer)
             .FirstOrDefaultAsync(b => b.BidId == id);
         
@@ -149,7 +144,7 @@ public class BidsController : ControllerBase
         // 3. Update Job
         job.Status = JobStatus.Assigned;
 
-        // 4. Update Balance (Simulated escrow)
+        // 4. Update Balance
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer != null) freelancer.Balance += bid.BidAmount;
 
@@ -169,6 +164,19 @@ public class BidsController : ControllerBase
             .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
             .ToListAsync();
         foreach (var other in otherBids) other.Status = BidStatus.Rejected;
+
+        // ✅ NEW: Create Social Post for "Bid Accepted"
+        // The Actor is the Freelancer (UserId = bid.FreelancerId)
+        var post = new SocialPost
+        {
+            UserId = bid.FreelancerId,
+            Type = PostType.BidAccepted,
+            JobId = job.JobId,
+            JobTitle = job.Title,
+            SecondPartyName = bid.Job?.Client?.FullName ?? "Client", // Store Client Name
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.SocialPosts.Add(post);
 
         await _context.SaveChangesAsync();
         return Ok(contract);

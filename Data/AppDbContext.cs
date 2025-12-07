@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
     {
     }
 
-    // DbSets
+    // ================== Existing DbSets ==================
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Job> Jobs { get; set; } = null!;
     public DbSet<Bid> Bids { get; set; } = null!;
@@ -27,6 +27,11 @@ public class AppDbContext : DbContext
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<JobComment> JobComments { get; set; } = null!;
     public DbSet<UserConnection> UserConnections { get; set; } = null!;
+
+    // ================== ✅ NEW SOCIAL FEED TABLES ==================
+    public DbSet<SocialPost> SocialPosts { get; set; } = null!;
+    public DbSet<PostLike> PostLikes { get; set; } = null!;
+    public DbSet<PostComment> PostComments { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -213,13 +218,26 @@ public class AppDbContext : DbContext
                 .HasForeignKey(us => us.SkillId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-modelBuilder.Entity<JobComment>()
+
+        // ========== Notification Configuration ==========
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.NotificationId);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+            entity.HasOne(n => n.User)
+                  .WithMany(u => u.Notifications)
+                  .HasForeignKey(n => n.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ========== Job Comment (Legacy) ==========
+        modelBuilder.Entity<JobComment>()
             .HasOne(c => c.User)
             .WithMany()
             .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Connections
+        // ========== User Connections ==========
         modelBuilder.Entity<UserConnection>()
             .HasOne(c => c.Requester)
             .WithMany()
@@ -231,14 +249,52 @@ modelBuilder.Entity<JobComment>()
             .WithMany()
             .HasForeignKey(c => c.TargetId)
             .OnDelete(DeleteBehavior.Restrict);
-        // ========== Notification Configuration ==========
-        modelBuilder.Entity<Notification>(entity =>
+
+        // ================== ✅ NEW SOCIAL FEED CONFIGURATION ==================
+        
+        // Social Post
+        modelBuilder.Entity<SocialPost>(entity =>
         {
-            entity.HasKey(e => e.NotificationId);
+            entity.HasKey(e => e.PostId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-            entity.HasOne(n => n.User)
-                  .WithMany(u => u.Notifications)
-                  .HasForeignKey(n => n.UserId)
+            
+            // User (Actor) relationship
+            entity.HasOne(p => p.User)
+                  .WithMany()
+                  .HasForeignKey(p => p.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Post Like
+        modelBuilder.Entity<PostLike>(entity =>
+        {
+            entity.HasKey(e => e.LikeId);
+
+            entity.HasOne(pl => pl.Post)
+                  .WithMany(p => p.Likes)
+                  .HasForeignKey(pl => pl.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(pl => pl.User)
+                  .WithMany()
+                  .HasForeignKey(pl => pl.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Post Comment
+        modelBuilder.Entity<PostComment>(entity =>
+        {
+            entity.HasKey(e => e.CommentId);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
+
+            entity.HasOne(pc => pc.Post)
+                  .WithMany(p => p.Comments)
+                  .HasForeignKey(pc => pc.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(pc => pc.User)
+                  .WithMany()
+                  .HasForeignKey(pc => pc.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

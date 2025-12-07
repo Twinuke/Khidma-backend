@@ -10,7 +10,8 @@ public enum NotificationType
     BidPlaced = 1,
     BidAccepted = 2,
     Payment = 3,
-    System = 4
+    System = 4,
+    ConnectionRequest = 5 // ✅ Added this new type
 }
 
 public class Notification

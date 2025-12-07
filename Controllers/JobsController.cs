@@ -16,8 +16,7 @@ public class JobsController : ControllerBase
         _context = context;
     }
 
-    // 1. ADVANCED SEARCH (For Freelancers)
-    // GET: api/Jobs/search
+    // 1. ADVANCED SEARCH
     [HttpGet("search")]
     public async Task<ActionResult<object>> SearchJobs(
         [FromQuery] string? query,
@@ -32,22 +31,18 @@ public class JobsController : ControllerBase
             .AsNoTracking()
             .Where(j => j.Status == JobStatus.Open);
 
-        // Filter by Query (Title or Description)
         if (!string.IsNullOrWhiteSpace(query))
         {
             queryable = queryable.Where(j => j.Title.Contains(query) || j.Description.Contains(query));
         }
 
-        // Filter by Category
         if (!string.IsNullOrWhiteSpace(category) && category != "All")
         {
             queryable = queryable.Where(j => j.Category == category);
         }
 
-        // Pagination Info
         var totalCount = await queryable.CountAsync();
         
-        // Execute Query with Projection
         var jobs = await queryable
             .OrderByDescending(j => j.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -64,10 +59,9 @@ public class JobsController : ControllerBase
                 j.IsRemote,
                 j.ExperienceLevel,
                 j.CreatedAt,
-                Client = new { j.Client.FullName, j.Client.UserId, j.Client.ProfileImageUrl }, // Send Avatar
-                BidsCount = j.Bids.Count,
-                // ✅ Check if the current user has already placed a bid
-                HasPlacedBid = currentUserId != null && j.Bids.Any(b => b.FreelancerId == currentUserId)
+                Client = j.Client == null ? null : new { j.Client.FullName, j.Client.UserId, j.Client.ProfileImageUrl },
+                BidsCount = j.Bids == null ? 0 : j.Bids.Count,
+                HasPlacedBid = currentUserId != null && j.Bids != null && j.Bids.Any(b => b.FreelancerId == currentUserId)
             })
             .ToListAsync();
 
@@ -80,8 +74,7 @@ public class JobsController : ControllerBase
         });
     }
 
-    // 2. GET SINGLE JOB (Basic Info)
-    // GET: api/Jobs/{id}
+    // 2. GET SINGLE JOB
     [HttpGet("{id}")]
     public async Task<ActionResult<Job>> GetJob(int id)
     {
@@ -94,8 +87,7 @@ public class JobsController : ControllerBase
         return Ok(job);
     }
 
-    // 3. GET JOBS BY CLIENT (For "My Jobs" Dashboard)
-    // GET: api/Jobs/client/{clientId}
+    // 3. GET JOBS BY CLIENT
     [HttpGet("client/{clientId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetJobsByClient(int clientId)
     {
@@ -111,24 +103,59 @@ public class JobsController : ControllerBase
                 j.Status,
                 j.CreatedAt,
                 j.Budget,
-                BidsCount = j.Bids.Count // Important for the dashboard stats
+                BidsCount = j.Bids == null ? 0 : j.Bids.Count 
             })
             .ToListAsync();
 
         return Ok(jobs);
     }
 
-    // 4. GET JOB WITH FULL BIDS (For "Client Job Details" / "Proposals" Tab)
-    // GET: api/Jobs/{id}/bids-full
+    // 4. GET JOB WITH FULL BIDS
     [HttpGet("{id}/bids-full")]
     public async Task<ActionResult<object>> GetJobWithBids(int id)
     {
         var job = await _context.Jobs
             .AsNoTracking()
-            .Include(j => j.Client) // Load Client info
-            .Include(j => j.Bids)
-                .ThenInclude(b => b.Freelancer) // ✅ CRITICAL: Loads Freelancer Name/Photo for the list
-            .FirstOrDefaultAsync(j => j.JobId == id);
+            .Where(j => j.JobId == id)
+            .Select(j => new 
+            {
+                j.JobId,
+                j.ClientId,
+                j.Title,
+                j.Description,
+                j.Category,
+                j.Budget,
+                j.Status,
+                j.CreatedAt,
+                j.Deadline,
+                j.IsRemote,
+                j.ExperienceLevel,
+                Client = j.Client == null ? null : new 
+                {
+                    j.Client.UserId,
+                    j.Client.FullName,
+                    j.Client.ProfileImageUrl
+                },
+                // ✅ FIX: Added '!' to assert Bids is not null for EF Core projection
+                Bids = j.Bids!.Select(b => new 
+                {
+                    b.BidId,
+                    b.JobId,
+                    b.FreelancerId,
+                    b.BidAmount,
+                    b.DeliveryTimeDays,
+                    b.ProposalText,
+                    b.CreatedAt,
+                    b.Status,
+                    Freelancer = b.Freelancer == null ? null : new 
+                    {
+                        b.Freelancer.UserId,
+                        b.Freelancer.FullName,
+                        b.Freelancer.ProfileImageUrl
+                    }
+                }).OrderByDescending(b => b.CreatedAt).ToList()
+            })
+            .FirstOrDefaultAsync();
 
         if (job == null) return NotFound();
 
@@ -136,13 +163,11 @@ public class JobsController : ControllerBase
     }
 
     // 5. POST NEW JOB
-    // POST: api/Jobs
     [HttpPost]
     public async Task<ActionResult<Job>> CreateJob([FromBody] Job job)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         
-        // Validate Client exists
         var client = await _context.Users.FindAsync(job.ClientId);
         if (client == null) return BadRequest("Invalid Client ID");
 
@@ -150,6 +175,18 @@ public class JobsController : ControllerBase
         job.Status = JobStatus.Open;
         
         _context.Jobs.Add(job);
+        await _context.SaveChangesAsync();
+        
+        // Create Social Post
+        var post = new SocialPost
+        {
+            UserId = job.ClientId,
+            Type = PostType.JobPosted,
+            JobId = job.JobId,
+            JobTitle = job.Title,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.SocialPosts.Add(post);
         await _context.SaveChangesAsync();
         
         return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
