@@ -95,4 +95,17 @@ public class JobsController : ControllerBase
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetJob), new { id = job.JobId }, job);
     }
+
+    // GET: api/Jobs/client/{clientId}
+    [HttpGet("client/{clientId}")]
+    public async Task<IActionResult> GetClientJobs(int clientId)
+    {
+        var jobs = await _context.Jobs
+            .Include(j => j.Bids)
+            .Where(j => j.ClientId == clientId)
+            .OrderByDescending(j => j.CreatedAt)
+            .ToListAsync();
+
+    return Ok(jobs);
+    }
 }

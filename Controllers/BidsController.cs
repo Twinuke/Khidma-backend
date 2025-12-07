@@ -45,7 +45,6 @@ public class BidsController : ControllerBase
     }
 
     // GET: api/Bids/freelancer/{freelancerId}
-    // ✅ UPDATED: Now includes Job and Client data for the "My Bids" page
     [HttpGet("freelancer/{freelancerId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByFreelancer(int freelancerId)
     {
@@ -58,6 +57,21 @@ public class BidsController : ControllerBase
         return Ok(bids);
     }
 
+    // GET: api/Bids/client/{clientId}
+    [HttpGet("client/{clientId}")]
+    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForClient(int clientId)
+    {
+        var bids = await _context.Bids.AsNoTracking()
+            .Include(b => b.Job)
+            .ThenInclude(j => j.Client)
+            .Include(b => b.Freelancer)
+            .Where(b => b.Job.ClientId == clientId)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+
+    return Ok(bids);
+    }
+
     // POST: api/Bids
     [HttpPost]
     public async Task<ActionResult<Bid>> CreateBid([FromBody] Bid bid)
@@ -68,7 +82,7 @@ public class BidsController : ControllerBase
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
 
-        // ✅ CHECK: Prevent duplicate bids
+        // CHECK: Prevent duplicate bids
         var existingBid = await _context.Bids
             .AnyAsync(b => b.JobId == bid.JobId && b.FreelancerId == bid.FreelancerId);
         if (existingBid)
