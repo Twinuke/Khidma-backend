@@ -25,6 +25,8 @@ public class AppDbContext : DbContext
     public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
+    public DbSet<JobComment> JobComments { get; set; } = null!;
+    public DbSet<UserConnection> UserConnections { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -211,7 +213,24 @@ public class AppDbContext : DbContext
                 .HasForeignKey(us => us.SkillId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
+modelBuilder.Entity<JobComment>()
+            .HasOne(c => c.User)
+            .WithMany()
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
+        // Connections
+        modelBuilder.Entity<UserConnection>()
+            .HasOne(c => c.Requester)
+            .WithMany()
+            .HasForeignKey(c => c.RequesterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<UserConnection>()
+            .HasOne(c => c.Target)
+            .WithMany()
+            .HasForeignKey(c => c.TargetId)
+            .OnDelete(DeleteBehavior.Restrict);
         // ========== Notification Configuration ==========
         modelBuilder.Entity<Notification>(entity =>
         {

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251207155311_YourMigrationName")]
+    partial class YourMigrationName
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -235,34 +237,6 @@ namespace khidma_backend.Migrations
                     b.HasIndex("ClientId");
 
                     b.ToTable("Jobs");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.JobComment", b =>
-                {
-                    b.Property<int>("CommentId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("JobId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CommentId");
-
-                    b.HasIndex("JobId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("JobComments");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Message", b =>
@@ -559,34 +533,6 @@ namespace khidma_backend.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.UserConnection", b =>
-                {
-                    b.Property<int>("ConnectionId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<int>("RequesterId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("TargetId")
-                        .HasColumnType("int");
-
-                    b.HasKey("ConnectionId");
-
-                    b.HasIndex("RequesterId");
-
-                    b.HasIndex("TargetId");
-
-                    b.ToTable("UserConnections");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.UserSkill", b =>
                 {
                     b.Property<int>("UserId")
@@ -695,25 +641,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Client");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.JobComment", b =>
-                {
-                    b.HasOne("khidma_backend.Models.Job", "Job")
-                        .WithMany()
-                        .HasForeignKey("JobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Job");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.Message", b =>
                 {
                     b.HasOne("khidma_backend.Models.Conversation", "Conversation")
@@ -792,25 +719,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Reviewee");
 
                     b.Navigation("Reviewer");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.UserConnection", b =>
-                {
-                    b.HasOne("khidma_backend.Models.User", "Requester")
-                        .WithMany()
-                        .HasForeignKey("RequesterId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("khidma_backend.Models.User", "Target")
-                        .WithMany()
-                        .HasForeignKey("TargetId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Requester");
-
-                    b.Navigation("Target");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.UserSkill", b =>

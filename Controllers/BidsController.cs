@@ -20,14 +20,23 @@ public class BidsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBids()
     {
-        return await _context.Bids.AsNoTracking().ToListAsync();
+        return await _context.Bids
+            .Include(b => b.Job)
+            .Include(b => b.Freelancer)
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     // GET: api/Bids/{id}
     [HttpGet("{id}")]
     public async Task<ActionResult<Bid>> GetBid(int id)
     {
-        var bid = await _context.Bids.AsNoTracking().FirstOrDefaultAsync(b => b.BidId == id);
+        var bid = await _context.Bids
+            .Include(b => b.Job)
+            .Include(b => b.Freelancer)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.BidId == id);
+
         if (bid == null) return NotFound();
         return Ok(bid);
     }
@@ -36,7 +45,8 @@ public class BidsController : ControllerBase
     [HttpGet("job/{jobId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForJob(int jobId)
     {
-        var bids = await _context.Bids.AsNoTracking()
+        var bids = await _context.Bids
+            .AsNoTracking()
             .Include(b => b.Freelancer) // Include Freelancer info for the Client view
             .Where(b => b.JobId == jobId)
             .OrderByDescending(b => b.CreatedAt)
@@ -48,31 +58,18 @@ public class BidsController : ControllerBase
     [HttpGet("freelancer/{freelancerId}")]
     public async Task<ActionResult<IEnumerable<Bid>>> GetBidsByFreelancer(int freelancerId)
     {
-        var bids = await _context.Bids.AsNoTracking()
+        var bids = await _context.Bids
+            .AsNoTracking()
             .Include(b => b.Job)
-            .ThenInclude(j => j.Client) // Need Client name for the UI
+            .ThenInclude(j => j.Client) // Include Client name for the UI
             .Where(b => b.FreelancerId == freelancerId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
         return Ok(bids);
     }
 
-    // GET: api/Bids/client/{clientId}
-    [HttpGet("client/{clientId}")]
-    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForClient(int clientId)
-    {
-        var bids = await _context.Bids.AsNoTracking()
-            .Include(b => b.Job)
-            .ThenInclude(j => j.Client)
-            .Include(b => b.Freelancer)
-            .Where(b => b.Job.ClientId == clientId)
-            .OrderByDescending(b => b.CreatedAt)
-            .ToListAsync();
-
-    return Ok(bids);
-    }
-
     // POST: api/Bids
+    // ✅ THIS IS THE MISSING ENDPOINT CAUSING 404
     [HttpPost]
     public async Task<ActionResult<Bid>> CreateBid([FromBody] Bid bid)
     {
@@ -82,16 +79,23 @@ public class BidsController : ControllerBase
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
 
-        // CHECK: Prevent duplicate bids
+        // Check if freelancer exists
+        var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
+        if (freelancer == null) return BadRequest("Freelancer not found");
+
+        // ✅ Prevent Clients from bidding
+        if (freelancer.UserType == UserType.Client)
+        {
+            return BadRequest("Clients cannot place bids on jobs.");
+        }
+
+        // ✅ Prevent duplicate bids
         var existingBid = await _context.Bids
             .AnyAsync(b => b.JobId == bid.JobId && b.FreelancerId == bid.FreelancerId);
         if (existingBid)
         {
             return BadRequest("You have already placed a bid on this job.");
         }
-
-        var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
-        if (freelancer == null) return BadRequest("Freelancer not found");
 
         bid.CreatedAt = DateTime.UtcNow;
         bid.Status = BidStatus.Pending;
@@ -112,7 +116,7 @@ public class BidsController : ControllerBase
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
-    // PUT: api/Bids/{id}/accept (Keep existing logic)
+    // PUT: api/Bids/{id}/accept
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
@@ -125,7 +129,7 @@ public class BidsController : ControllerBase
         if (bid.Status != BidStatus.Pending) return BadRequest("Bid is not pending");
 
         var job = await _context.Jobs.FindAsync(bid.JobId);
-        if (job == null || job.Status != JobStatus.Open) return BadRequest("Job is not open");
+        if (job == null) return BadRequest("Job not found");
 
         // 1. Update Bid
         bid.Status = BidStatus.Accepted;
@@ -145,7 +149,7 @@ public class BidsController : ControllerBase
         // 3. Update Job
         job.Status = JobStatus.Assigned;
 
-        // 4. Update Balance
+        // 4. Update Balance (Simulated escrow)
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer != null) freelancer.Balance += bid.BidAmount;
 
@@ -168,5 +172,16 @@ public class BidsController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(contract);
+    }
+
+    // DELETE: api/Bids/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteBid(int id)
+    {
+        var bid = await _context.Bids.FindAsync(id);
+        if (bid == null) return NotFound();
+        _context.Bids.Remove(bid);
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }
