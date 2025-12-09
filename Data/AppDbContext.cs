@@ -32,6 +32,8 @@ public class AppDbContext : DbContext
     public DbSet<SocialPost> SocialPosts { get; set; } = null!;
     public DbSet<PostLike> PostLikes { get; set; } = null!;
     public DbSet<PostComment> PostComments { get; set; } = null!;
+    public DbSet<PostReaction> PostReactions { get; set; } = null!;
+    public DbSet<CommentLike> CommentLikes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -295,6 +297,36 @@ public class AppDbContext : DbContext
             entity.HasOne(pc => pc.User)
                   .WithMany()
                   .HasForeignKey(pc => pc.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<PostReaction>(entity =>
+        {
+            entity.HasKey(e => e.ReactionId);
+
+            entity.HasOne(pr => pr.Post)
+                  .WithMany() // No navigation property needed on SocialPost for now
+                  .HasForeignKey(pr => pr.PostId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(pr => pr.User)
+                  .WithMany()
+                  .HasForeignKey(pr => pr.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Comment Like Configuration
+        modelBuilder.Entity<CommentLike>(entity =>
+        {
+            entity.HasKey(e => e.LikeId);
+
+            entity.HasOne(cl => cl.Comment)
+                  .WithMany() // No navigation property needed on PostComment for now
+                  .HasForeignKey(cl => cl.CommentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cl => cl.User)
+                  .WithMany()
+                  .HasForeignKey(cl => cl.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

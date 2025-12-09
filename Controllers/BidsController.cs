@@ -96,21 +96,33 @@ public class BidsController : ControllerBase
         bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
 
-        var notif = new Notification
+        var notifFreelancer = new Notification
         {
             UserId = bid.FreelancerId,
             Title = "Bid Placed",
             Message = $"You placed a bid of ${bid.BidAmount} on '{job.Title}'.",
             Type = NotificationType.BidPlaced,
+            RelatedEntityId = job.JobId, 
             CreatedAt = DateTime.UtcNow
         };
-        _context.Notifications.Add(notif);
+        _context.Notifications.Add(notifFreelancer);
+
+        var notifClient = new Notification
+        {
+            UserId = job.ClientId,
+            Title = "New Bid Received",
+            Message = $"{freelancer.FullName} placed a bid of ${bid.BidAmount} on '{job.Title}'.",
+            Type = NotificationType.BidPlaced,
+            RelatedEntityId = job.JobId, // Link to Job so Client sees it when viewing Job
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Notifications.Add(notifClient);
 
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
-    // PUT: api/Bids/{id}/accept (UPDATED WITH SOCIAL POST)
+    // PUT: api/Bids/{id}/accept
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
@@ -155,6 +167,7 @@ public class BidsController : ControllerBase
             Title = "Bid Accepted!",
             Message = $"Congrats! Your bid for '{job.Title}' was accepted.",
             Type = NotificationType.BidAccepted,
+            RelatedEntityId = job.JobId, // ✅ CHANGED: Link to JobId (not Contract) so it's easier to route
             CreatedAt = DateTime.UtcNow
         };
         _context.Notifications.Add(notif);
@@ -165,15 +178,14 @@ public class BidsController : ControllerBase
             .ToListAsync();
         foreach (var other in otherBids) other.Status = BidStatus.Rejected;
 
-        // ✅ NEW: Create Social Post for "Bid Accepted"
-        // The Actor is the Freelancer (UserId = bid.FreelancerId)
+        // 7. Social Post
         var post = new SocialPost
         {
             UserId = bid.FreelancerId,
             Type = PostType.BidAccepted,
             JobId = job.JobId,
             JobTitle = job.Title,
-            SecondPartyName = bid.Job?.Client?.FullName ?? "Client", // Store Client Name
+            SecondPartyName = bid.Job?.Client?.FullName ?? "Client",
             CreatedAt = DateTime.UtcNow
         };
         _context.SocialPosts.Add(post);
