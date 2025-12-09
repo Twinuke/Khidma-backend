@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251209133417_Unread Messages Fixes")]
+    partial class UnreadMessagesFixes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -586,17 +588,12 @@ namespace khidma_backend.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("JobId")
-                        .HasColumnType("int");
-
                     b.Property<string>("SkillName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
                     b.HasKey("SkillId");
-
-                    b.HasIndex("JobId");
 
                     b.HasIndex("SkillName")
                         .IsUnique();
@@ -1012,13 +1009,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Reviewer");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.Skill", b =>
-                {
-                    b.HasOne("khidma_backend.Models.Job", null)
-                        .WithMany("Skills")
-                        .HasForeignKey("JobId");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.SocialPost", b =>
                 {
                     b.HasOne("khidma_backend.Models.User", "User")
@@ -1087,8 +1077,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Contracts");
 
                     b.Navigation("Messages");
-
-                    b.Navigation("Skills");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Skill", b =>

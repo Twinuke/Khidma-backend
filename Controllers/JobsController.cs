@@ -75,16 +75,41 @@ public class JobsController : ControllerBase
     }
 
     // 2. GET SINGLE JOB
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Job>> GetJob(int id)
+    [HttpGet("{id}/{viewerId?}")]
+    public async Task<ActionResult> GetJob(int id, int? viewerId = null)
     {
         var job = await _context.Jobs
             .Include(j => j.Client)
+            .Include(j => j.Skills) // ✅ This line will now compile
             .AsNoTracking()
             .FirstOrDefaultAsync(j => j.JobId == id);
 
         if (job == null) return NotFound();
-        return Ok(job);
+
+        // Check if the current viewer has already bid
+        bool hasBid = false;
+        if (viewerId.HasValue)
+        {
+            hasBid = await _context.Bids.AnyAsync(b => b.JobId == id && b.FreelancerId == viewerId);
+        }
+
+        return Ok(new 
+        {
+            job.JobId,
+            job.ClientId,
+            job.Title,
+            job.Description,
+            job.Category,
+            job.Budget,
+            job.Status,
+            job.CreatedAt,
+            job.Deadline,
+            job.IsRemote,
+            job.ExperienceLevel,
+            Client = job.Client == null ? null : new { job.Client.UserId, job.Client.FullName, job.Client.ProfileImageUrl },
+            Skills = job.Skills,
+            HasBid = hasBid
+        });
     }
 
     // 3. GET JOBS BY CLIENT
@@ -136,7 +161,6 @@ public class JobsController : ControllerBase
                     j.Client.FullName,
                     j.Client.ProfileImageUrl
                 },
-                // ✅ FIX: Added '!' to assert Bids is not null for EF Core projection
                 Bids = j.Bids!.Select(b => new 
                 {
                     b.BidId,

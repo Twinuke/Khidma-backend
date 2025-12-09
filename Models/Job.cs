@@ -38,12 +38,10 @@ public class Job
 
     public DateTime? Deadline { get; set; }
 
-    // --- NEW FIELDS ---
     public bool IsRemote { get; set; } = false;
     
     [StringLength(50)]
-    public string ExperienceLevel { get; set; } = "Intermediate"; // Entry, Intermediate, Expert
-    // ------------------
+    public string ExperienceLevel { get; set; } = "Intermediate";
 
     [Required]
     public JobStatus Status { get; set; } = JobStatus.Open;
@@ -52,7 +50,7 @@ public class Job
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     // Navigation properties
-    [JsonIgnore] // Changed: We might want to remove this if you want client data in search, but for now keep consistent
+    [JsonIgnore] 
     public User? Client { get; set; }
 
     [JsonIgnore]
@@ -63,4 +61,6 @@ public class Job
 
     [JsonIgnore]
     public ICollection<Message>? Messages { get; set; }
+
+    public ICollection<Skill>? Skills { get; set; }
 }

@@ -16,6 +16,18 @@ public class ChatController : ControllerBase
         _context = context;
     }
 
+    // ✅ NEW: Get global total unread count for the Chat Tab Badge
+    [HttpGet("unread/count/{userId}")]
+    public async Task<ActionResult<int>> GetTotalUnreadCount(int userId)
+    {
+        var count = await _context.Messages
+            .Where(m => m.SenderId != userId && !m.IsRead && 
+                       (m.Conversation.User1Id == userId || m.Conversation.User2Id == userId))
+            .CountAsync();
+
+        return Ok(count);
+    }
+
     [HttpGet("my/{userId}")]
     public async Task<ActionResult> GetMyConversations(int userId)
     {
@@ -33,17 +45,61 @@ public class ChatController : ControllerBase
                     new { c.User1.UserId, c.User1.FullName, c.User1.ProfileImageUrl },
                 LastMessage = c.Messages != null 
                     ? c.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault() 
-                    : null
+                    : null,
+                // Include individual count for the list view
+                UnreadCount = c.Messages != null 
+                    ? c.Messages.Count(m => m.SenderId != userId && !m.IsRead) 
+                    : 0
             })
             .ToListAsync();
 
         return Ok(convs);
     }
 
+    // ✅ UPDATED: Marking read now updates both Messages and Notifications
+    [HttpPut("read/{conversationId}/{userId}")]
+    public async Task<IActionResult> MarkConversationAsRead(int conversationId, int userId)
+    {
+        // 1. Mark Messages as Read
+        var unreadMessages = await _context.Messages
+            .Where(m => m.ConversationId == conversationId && m.SenderId != userId && !m.IsRead)
+            .ToListAsync();
+
+        if (unreadMessages.Any())
+        {
+            foreach (var msg in unreadMessages)
+            {
+                msg.IsRead = true;
+            }
+        }
+
+        // 2. Mark Notification as Read (Optional: keeps Home tab in sync)
+        var unreadNotifications = await _context.Notifications
+            .Where(n => n.UserId == userId 
+                        && n.RelatedEntityId == conversationId 
+                        && n.Type == NotificationType.ChatMessage 
+                        && !n.IsRead)
+            .ToListAsync();
+
+        if (unreadNotifications.Any())
+        {
+            foreach (var notif in unreadNotifications)
+            {
+                notif.IsRead = true;
+            }
+        }
+
+        if (unreadMessages.Any() || unreadNotifications.Any())
+        {
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok();
+    }
+
     [HttpPost("open")]
     public async Task<ActionResult> OpenConversation([FromBody] OpenChatRequest req)
     {
-        // 1. Check if exists
         var existing = await _context.Conversations
             .FirstOrDefaultAsync(c => 
                 (c.User1Id == req.User1Id && c.User2Id == req.User2Id) || 
@@ -51,7 +107,6 @@ public class ChatController : ControllerBase
 
         if (existing != null) return Ok(existing);
 
-        // 2. ✅ Check Permission: If no JobId, users MUST be connected
         if (req.JobId == null || req.JobId == 0)
         {
             var isConnected = await _context.UserConnections.AnyAsync(c =>
@@ -62,7 +117,6 @@ public class ChatController : ControllerBase
             if (!isConnected) return BadRequest("Users are not connected");
         }
 
-        // 3. Create new
         var newConv = new Conversation
         {
             User1Id = req.User1Id,
