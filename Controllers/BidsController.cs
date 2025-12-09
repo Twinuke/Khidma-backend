@@ -101,7 +101,7 @@ public class BidsController : ControllerBase
             UserId = bid.FreelancerId,
             Title = "Bid Placed",
             Message = $"You placed a bid of ${bid.BidAmount} on '{job.Title}'.",
-            Type = NotificationType.BidPlaced,
+            Type = NotificationType.BidPlaced, // Type 1
             RelatedEntityId = job.JobId, 
             CreatedAt = DateTime.UtcNow
         };
@@ -112,8 +112,8 @@ public class BidsController : ControllerBase
             UserId = job.ClientId,
             Title = "New Bid Received",
             Message = $"{freelancer.FullName} placed a bid of ${bid.BidAmount} on '{job.Title}'.",
-            Type = NotificationType.BidPlaced,
-            RelatedEntityId = job.JobId, // Link to Job so Client sees it when viewing Job
+            Type = NotificationType.BidPlaced, // Type 1
+            RelatedEntityId = job.JobId,
             CreatedAt = DateTime.UtcNow
         };
         _context.Notifications.Add(notifClient);
@@ -160,23 +160,40 @@ public class BidsController : ControllerBase
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer != null) freelancer.Balance += bid.BidAmount;
 
-        // 5. Notify Freelancer
+        // 5. Notify Freelancer (Winner)
         var notif = new Notification
         {
             UserId = bid.FreelancerId,
             Title = "Bid Accepted!",
             Message = $"Congrats! Your bid for '{job.Title}' was accepted.",
-            Type = NotificationType.BidAccepted,
-            RelatedEntityId = job.JobId, // ✅ CHANGED: Link to JobId (not Contract) so it's easier to route
+            Type = NotificationType.BidAccepted, // Type 2
+            RelatedEntityId = job.JobId, // Correctly linking to JobId
             CreatedAt = DateTime.UtcNow
         };
         _context.Notifications.Add(notif);
 
-        // 6. Reject others
+        // 6. Reject others and Notify them
         var otherBids = await _context.Bids
             .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
             .ToListAsync();
-        foreach (var other in otherBids) other.Status = BidStatus.Rejected;
+            
+        foreach (var other in otherBids) 
+        {
+            other.Status = BidStatus.Rejected;
+            
+            // ✅ Notify Rejected Freelancers
+            _context.Notifications.Add(new Notification
+            {
+                UserId = other.FreelancerId,
+                Title = "Bid Update",
+                Message = $"A different bid was accepted for '{job.Title}'.",
+                // Uses System (0) or BidRejected (if exists). 
+                // Since Frontend now handles Case 0 and Default, this will work.
+                Type = NotificationType.System, 
+                RelatedEntityId = job.JobId,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
 
         // 7. Social Post
         var post = new SocialPost

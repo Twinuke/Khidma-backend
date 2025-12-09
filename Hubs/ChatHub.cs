@@ -14,13 +14,11 @@ public class ChatHub : Hub
         _context = context;
     }
 
-    // Frontend calls this when entering a chat screen
     public async Task JoinConversation(string conversationId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, conversationId);
     }
 
-    // Frontend calls this to send a message
     public async Task SendMessage(int conversationId, int senderId, string content)
     {
         // 1. Save to DB
@@ -39,11 +37,24 @@ public class ChatHub : Hub
         if (conv != null)
         {
             conv.LastUpdated = DateTime.UtcNow;
+            
+            // ✅ 2.5 Create Notification for Recipient
+            var recipientId = (conv.User1Id == senderId) ? conv.User2Id : conv.User1Id;
+            var sender = await _context.Users.FindAsync(senderId);
+            
+            _context.Notifications.Add(new Notification {
+                UserId = recipientId,
+                Title = sender?.FullName ?? "New Message",
+                Message = content.Length > 50 ? content.Substring(0, 47) + "..." : content,
+                Type = NotificationType.ChatMessage, // Assuming Type 4 is ChatMessage in your enum
+                RelatedEntityId = conversationId, 
+                CreatedAt = DateTime.UtcNow
+            });
         }
 
         await _context.SaveChangesAsync();
 
-        // 3. Broadcast to everyone in this conversation group (Real-time)
+        // 3. Broadcast
         await Clients.Group(conversationId.ToString()).SendAsync("ReceiveMessage", msg);
     }
 }

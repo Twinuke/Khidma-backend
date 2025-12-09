@@ -16,7 +16,6 @@ public class ChatController : ControllerBase
         _context = context;
     }
 
-    // 1. Get My Conversations (For Chat Tab)
     [HttpGet("my/{userId}")]
     public async Task<ActionResult> GetMyConversations(int userId)
     {
@@ -32,28 +31,38 @@ public class ChatController : ControllerBase
                 OtherUser = c.User1Id == userId ? 
                     new { c.User2.UserId, c.User2.FullName, c.User2.ProfileImageUrl } : 
                     new { c.User1.UserId, c.User1.FullName, c.User1.ProfileImageUrl },
-                LastMessage = c.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault()
+                LastMessage = c.Messages != null 
+                    ? c.Messages.OrderByDescending(m => m.SentAt).FirstOrDefault() 
+                    : null
             })
             .ToListAsync();
 
         return Ok(convs);
     }
 
-    // 2. Open/Create Conversation (From Job/Bid or Search)
     [HttpPost("open")]
     public async Task<ActionResult> OpenConversation([FromBody] OpenChatRequest req)
     {
-        // Check if exists
+        // 1. Check if exists
         var existing = await _context.Conversations
             .FirstOrDefaultAsync(c => 
-                ((c.User1Id == req.User1Id && c.User2Id == req.User2Id) || 
-                 (c.User1Id == req.User2Id && c.User2Id == req.User1Id)) &&
-                (req.JobId == null || c.JobId == req.JobId) // Optional Job Context
-            );
+                (c.User1Id == req.User1Id && c.User2Id == req.User2Id) || 
+                (c.User1Id == req.User2Id && c.User2Id == req.User1Id));
 
         if (existing != null) return Ok(existing);
 
-        // Create new
+        // 2. ✅ Check Permission: If no JobId, users MUST be connected
+        if (req.JobId == null || req.JobId == 0)
+        {
+            var isConnected = await _context.UserConnections.AnyAsync(c =>
+                ((c.RequesterId == req.User1Id && c.TargetId == req.User2Id) ||
+                 (c.RequesterId == req.User2Id && c.TargetId == req.User1Id)) 
+                && c.Status == "Accepted");
+
+            if (!isConnected) return BadRequest("Users are not connected");
+        }
+
+        // 3. Create new
         var newConv = new Conversation
         {
             User1Id = req.User1Id,
@@ -67,7 +76,6 @@ public class ChatController : ControllerBase
         return Ok(newConv);
     }
 
-    // 3. Get Messages (History)
     [HttpGet("{conversationId}/messages")]
     public async Task<ActionResult> GetMessages(int conversationId)
     {
@@ -76,6 +84,19 @@ public class ChatController : ControllerBase
             .OrderBy(m => m.SentAt)
             .ToListAsync();
         return Ok(msgs);
+    }
+    
+    [HttpGet("{conversationId}")]
+    public async Task<ActionResult<Conversation>> GetConversation(int conversationId)
+    {
+        var conv = await _context.Conversations
+            .Include(c => c.User1)
+            .Include(c => c.User2)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.ConversationId == conversationId);
+
+        if (conv == null) return NotFound();
+        return Ok(conv);
     }
 }
 

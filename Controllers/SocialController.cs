@@ -47,17 +47,24 @@ public class SocialController : ControllerBase
                 p.JobTitle,
                 p.SecondPartyName,
                 p.CreatedAt,
+                
+                // ✅ 1. Likes Count (Heart Button)
                 LikesCount = p.Likes == null ? 0 : p.Likes.Count,
                 IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
+                
+                // ✅ 2. Reactions (Emoji Picker)
                 Reactions = _context.PostReactions
                     .Where(r => r.PostId == p.PostId)
                     .GroupBy(r => r.Reaction)
                     .Select(g => new { Type = g.Key, Count = g.Count() })
                     .ToList(),
+                
+                // ✅ 3. My Current Reaction (for toggle logic)
                 MyReaction = _context.PostReactions
                     .Where(r => r.PostId == p.PostId && r.UserId == userId)
                     .Select(r => r.Reaction)
                     .FirstOrDefault(),
+                
                 Comments = p.Comments!.Select(c => new {
                     c.CommentId,
                     c.Content,
@@ -75,8 +82,10 @@ public class SocialController : ControllerBase
     [HttpPost("posts/{postId}/like")]
     public async Task<IActionResult> ToggleLike(int postId, [FromQuery] int userId)
     {
-        var existing = await _context.PostLikes.FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
         var post = await _context.SocialPosts.FindAsync(postId);
+        if (post == null) return NotFound("Post not found");
+
+        var existing = await _context.PostLikes.FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
 
         if (existing != null)
         {
@@ -86,8 +95,8 @@ public class SocialController : ControllerBase
         {
             _context.PostLikes.Add(new PostLike { PostId = postId, UserId = userId });
             
-            // ✅ Notify Post Owner (if not self)
-            if (post != null && post.UserId != userId)
+            // Notify owner if it's not their own post
+            if (post.UserId != userId)
             {
                 var liker = await _context.Users.FindAsync(userId);
                 _context.Notifications.Add(new Notification {
@@ -106,20 +115,31 @@ public class SocialController : ControllerBase
     [HttpPost("posts/react")]
     public async Task<IActionResult> ReactToPost([FromBody] ReactionDto dto)
     {
-        var existing = await _context.PostReactions.FirstOrDefaultAsync(r => r.PostId == dto.PostId && r.UserId == dto.UserId);
         var post = await _context.SocialPosts.FindAsync(dto.PostId);
+        if (post == null) return NotFound("Post not found");
+
+        var existing = await _context.PostReactions.FirstOrDefaultAsync(r => r.PostId == dto.PostId && r.UserId == dto.UserId);
 
         if (existing != null)
         {
-            if (existing.Reaction == dto.Reaction) _context.PostReactions.Remove(existing);
-            else existing.Reaction = dto.Reaction;
+            // ✅ FIX: Toggle Logic
+            // If the user clicks the SAME reaction again -> Remove it
+            if (existing.Reaction == dto.Reaction) 
+            {
+                _context.PostReactions.Remove(existing);
+            }
+            else 
+            {
+                // If different -> Update it
+                existing.Reaction = dto.Reaction; 
+            }
         }
         else
         {
+            // If new -> Add it
             _context.PostReactions.Add(new PostReaction { PostId = dto.PostId, UserId = dto.UserId, Reaction = dto.Reaction });
             
-            // ✅ Notify Post Owner
-            if (post != null && post.UserId != dto.UserId)
+            if (post.UserId != dto.UserId)
             {
                 var reactor = await _context.Users.FindAsync(dto.UserId);
                 _context.Notifications.Add(new Notification {
@@ -134,18 +154,20 @@ public class SocialController : ControllerBase
         await _context.SaveChangesAsync();
         return Ok();
     }
-
+    
     [HttpPost("posts/comment")]
     public async Task<IActionResult> AddComment([FromBody] PostComment comment)
     {
         if (string.IsNullOrWhiteSpace(comment.Content)) return BadRequest("Content required");
+        
+        var post = await _context.SocialPosts.FindAsync(comment.PostId);
+        if (post == null) return NotFound("Post not found");
+
         comment.CreatedAt = DateTime.UtcNow;
         _context.PostComments.Add(comment);
         
-        var post = await _context.SocialPosts.FindAsync(comment.PostId);
-        if (post != null && post.UserId != comment.UserId)
+        if (post.UserId != comment.UserId)
         {
-            // ✅ Notify Post Owner
             var commenter = await _context.Users.FindAsync(comment.UserId);
             _context.Notifications.Add(new Notification {
                 UserId = post.UserId,
@@ -195,14 +217,12 @@ public class SocialController : ControllerBase
 
         var requester = await _context.Users.FindAsync(req.RequesterId);
         
-        // ✅ Notify Target (Link to Requester's Profile? Or Connection Tab)
-        // Storing RequesterId as RelatedEntityId
         _context.Notifications.Add(new Notification {
             UserId = req.TargetId,
             Title = "New Connection Request",
             Message = $"{requester?.FullName ?? "A user"} sent you a connection request.",
             Type = NotificationType.ConnectionRequest,
-            RelatedEntityId = req.RequesterId, // IMPORTANT for navigation
+            RelatedEntityId = req.RequesterId, 
             CreatedAt = DateTime.UtcNow
         });
 
@@ -238,6 +258,20 @@ public class SocialController : ControllerBase
         var conn = await _context.UserConnections.FindAsync(connectionId);
         if (conn == null) return NotFound();
         conn.Status = dto.Status;
+
+        if (dto.Status == "Accepted") 
+        {
+            // Notify the Requester that their request was accepted
+            _context.Notifications.Add(new Notification {
+                UserId = conn.RequesterId, // Send to original requester
+                Title = "Connection Accepted",
+                Message = "Your connection request was accepted.",
+                Type = (NotificationType)10, // Type 10 = ConnectionAccepted
+                RelatedEntityId = conn.TargetId, // Link to the user who accepted
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
         await _context.SaveChangesAsync();
         return Ok(conn);
     }
