@@ -27,7 +27,8 @@ public class AppDbContext : DbContext
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<JobComment> JobComments { get; set; } = null!;
     public DbSet<UserConnection> UserConnections { get; set; } = null!;
-
+// Inside AppDbContext.cs class
+public DbSet<UserAiProfile> UserAiProfiles { get; set; }
     // ================== ✅ NEW SOCIAL FEED TABLES ==================
     public DbSet<SocialPost> SocialPosts { get; set; } = null!;
     public DbSet<PostLike> PostLikes { get; set; } = null!;

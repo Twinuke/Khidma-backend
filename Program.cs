@@ -17,7 +17,11 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-builder.Services.AddSignalR();
+        builder.Services.AddSignalR();
+        
+        // ✅ NEW: Add HttpClient for AI requests
+        builder.Services.AddHttpClient();
+
         // EF Core DbContext registration
         var connectionString = builder.Configuration.GetConnectionString("KhidmaDbContext") 
             ?? builder.Configuration.GetConnectionString("DefaultConnection");
@@ -60,18 +64,12 @@ builder.Services.AddSignalR();
             {
                 if (builder.Environment.IsDevelopment())
                 {
-                    // Allow all origins in development for easier testing
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
+                    policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
                 }
                 else
                 {
-                    // Restrict to specific origins in production
                     policy.WithOrigins("http://localhost:3000", "http://localhost:19006", "http://localhost:8081", "exp://localhost:8081")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod()
-                          .AllowCredentials();
+                          .AllowAnyHeader().AllowAnyMethod().AllowCredentials();
                 }
             });
         });
@@ -83,7 +81,7 @@ builder.Services.AddSignalR();
         app.UseSwaggerUI();
 
         app.UseCors(CorsPolicyName);
-app.MapHub<khidma_backend.Hubs.ChatHub>("/chatHub");
+        app.MapHub<khidma_backend.Hubs.ChatHub>("/chatHub");
         app.UseAuthentication();
         app.UseAuthorization();
 

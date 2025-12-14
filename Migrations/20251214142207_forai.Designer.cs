@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251214142207_forai")]
+    partial class forai
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -644,49 +646,6 @@ namespace khidma_backend.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("khidma_backend.Models.UserAiProfile", b =>
-                {
-                    b.Property<int>("ProfileId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConfidenceLevel")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime(6)");
-
-                    b.Property<string>("GeneratedAiPrompt")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SelectedDomains")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("SelectedSkills")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<string>("SelectedTools")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("WorkStyle")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("ProfileId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("UserAiProfiles");
-                });
-
             modelBuilder.Entity("khidma_backend.Models.UserConnection", b =>
                 {
                     b.Property<int>("ConnectionId")
@@ -961,17 +920,6 @@ namespace khidma_backend.Migrations
                 });
 
             modelBuilder.Entity("khidma_backend.Models.SocialPost", b =>
-                {
-                    b.HasOne("khidma_backend.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.UserAiProfile", b =>
                 {
                     b.HasOne("khidma_backend.Models.User", "User")
                         .WithMany()
