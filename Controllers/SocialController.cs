@@ -16,11 +16,10 @@ public class SocialController : ControllerBase
         _context = context;
     }
 
-    // --- 1. GET FEED (Only from Connections) ---
+    // --- 1. GET FEED (Updated to include Reactions) ---
     [HttpGet("feed/{userId}")]
     public async Task<ActionResult<object>> GetFeed(int userId)
     {
-        // A. Get List of Friend IDs
         var friendIds = await _context.UserConnections
             .AsNoTracking()
             .Where(c => (c.RequesterId == userId || c.TargetId == userId) && c.Status == "Accepted")
@@ -31,7 +30,6 @@ public class SocialController : ControllerBase
 
         if (!friendIds.Any()) return Ok(new List<object>());
 
-        // B. Fetch Posts
         var posts = await _context.SocialPosts
             .AsNoTracking()
             .Where(p => friendIds.Contains(p.UserId))
@@ -50,9 +48,11 @@ public class SocialController : ControllerBase
                 p.JobTitle,
                 p.SecondPartyName,
                 p.CreatedAt,
+                // Total count of both likes and reactions (Requirement 4)
                 LikesCount = p.Likes == null ? 0 : p.Likes.Count,
+                // Returns the specific reaction type if the user has interacted (Requirement 3)
+                MyReaction = p.Likes != null ? p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault() : null,
                 IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
-                // ✅ FIX: Removed manual null check/ternary. EF Core handles empty collections automatically.
                 Comments = p.Comments!.Select(c => new {
                     c.CommentId,
                     c.Content,
@@ -65,21 +65,38 @@ public class SocialController : ControllerBase
         return Ok(posts);
     }
 
-    // --- 2. LIKE POST ---
-    [HttpPost("posts/{postId}/like")]
-    public async Task<IActionResult> ToggleLike(int postId, [FromQuery] int userId)
+    // --- 2. CONSOLIDATED REACT/LIKE (Requirement 1, 2 & 3) ---
+    [HttpPost("posts/{postId}/react")]
+    public async Task<IActionResult> ReactToPost(int postId, [FromQuery] int userId, [FromQuery] string? reaction)
     {
         var existing = await _context.PostLikes
             .FirstOrDefaultAsync(l => l.PostId == postId && l.UserId == userId);
 
         if (existing != null)
         {
-            _context.PostLikes.Remove(existing);
+            // If user selects the same reaction again, remove it (toggle off)
+            // or if reaction is explicitly null/empty (Requirement 3)
+            if (existing.ReactionType == reaction || string.IsNullOrEmpty(reaction))
+            {
+                _context.PostLikes.Remove(existing);
+            }
+            else
+            {
+                // Update to a different reaction type
+                existing.ReactionType = reaction;
+            }
         }
-        else
+        else if (!string.IsNullOrEmpty(reaction))
         {
-            _context.PostLikes.Add(new PostLike { PostId = postId, UserId = userId });
+            // Create a new interaction (Requirement 3)
+            _context.PostLikes.Add(new PostLike 
+            { 
+                PostId = postId, 
+                UserId = userId, 
+                ReactionType = reaction 
+            });
         }
+
         await _context.SaveChangesAsync();
         return Ok();
     }

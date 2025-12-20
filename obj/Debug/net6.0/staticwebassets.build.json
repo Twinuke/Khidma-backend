@@ -1,11 +1,12 @@
 {
   "Version": 1,
-  "Hash": "7mOMgY7b965mt+XcXNXj8+50rgy83tPLXjc/cY5LbjA=",
+  "Hash": "SCACVGgqrkcdfDhe4zeu1gXQscm8V5dYd4TQiuN/QkA=",
   "Source": "khidma-backend",
   "BasePath": "_content/khidma-backend",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
   "DiscoveryPatterns": [],
-  "Assets": []
+  "Assets": [],
+  "Endpoints": []
 }
