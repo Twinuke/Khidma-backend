@@ -11,7 +11,8 @@ public enum NotificationType
     BidAccepted = 2,
     Payment = 3,
     System = 4,
-    ConnectionRequest = 5 // ✅ Added this new type
+    ConnectionRequest = 5,
+    PostCreated = 6 // ✅ New post from connection
 }
 
 public class Notification

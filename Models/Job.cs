@@ -34,6 +34,24 @@ public class Job
     
     public JobStatus Status { get; set; } = JobStatus.Open;
 
+    // ✅ New detailed fields for comprehensive job posting
+    [Column(TypeName = "TEXT")]
+    public string? RequiredSkills { get; set; } // Comma-separated skills
+    
+    [Column(TypeName = "TEXT")]
+    public string? ProjectScope { get; set; } // Detailed project scope
+    
+    [Column(TypeName = "TEXT")]
+    public string? Deliverables { get; set; } // Expected deliverables
+    
+    [Column(TypeName = "TEXT")]
+    public string? Timeline { get; set; } // Project timeline
+    
+    [Column(TypeName = "TEXT")]
+    public string? AdditionalDetails { get; set; } // Any additional information
+    
+    public string? Deadline { get; set; } // Project deadline
+
     // Relationships
     public int ClientId { get; set; }
     

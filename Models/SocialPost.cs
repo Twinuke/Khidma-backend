@@ -7,7 +7,8 @@ namespace khidma_backend.Models;
 public enum PostType
 {
     JobPosted = 0,
-    BidAccepted = 1
+    BidAccepted = 1,
+    GeneralPost = 2
 }
 
 public class SocialPost
@@ -26,6 +27,10 @@ public class SocialPost
     // Snapshot data to avoid deep nesting queries
     public string JobTitle { get; set; } = string.Empty;
     public string? SecondPartyName { get; set; } // e.g., The Client name if the actor is Freelancer
+    
+    // For general posts
+    [Column(TypeName = "TEXT")]
+    public string? Content { get; set; } // Post content for GeneralPost type
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

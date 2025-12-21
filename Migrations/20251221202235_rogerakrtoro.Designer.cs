@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251221202235_rogerakrtoro")]
+    partial class rogerakrtoro
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -262,44 +264,6 @@ namespace khidma_backend.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("JobComments");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.JobUpdate", b =>
-                {
-                    b.Property<int>("UpdateId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
-
-                    b.Property<int>("FreelancerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("JobId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .HasMaxLength(100)
-                        .HasColumnType("varchar(100)");
-
-                    b.Property<string>("UpdateType")
-                        .HasMaxLength(50)
-                        .HasColumnType("varchar(50)");
-
-                    b.HasKey("UpdateId");
-
-                    b.HasIndex("FreelancerId");
-
-                    b.HasIndex("JobId");
-
-                    b.ToTable("JobUpdates");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Message", b =>
@@ -588,9 +552,6 @@ namespace khidma_backend.Migrations
                     b.Property<int>("PostId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -902,25 +863,6 @@ namespace khidma_backend.Migrations
                     b.Navigation("Job");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("khidma_backend.Models.JobUpdate", b =>
-                {
-                    b.HasOne("khidma_backend.Models.User", "Freelancer")
-                        .WithMany()
-                        .HasForeignKey("FreelancerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("khidma_backend.Models.Job", "Job")
-                        .WithMany()
-                        .HasForeignKey("JobId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Freelancer");
-
-                    b.Navigation("Job");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Message", b =>
