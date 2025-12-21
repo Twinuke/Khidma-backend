@@ -18,31 +18,25 @@ public class SocialController : ControllerBase
         _context = context;
     }
 
-    // --- 1. GET FEED ---
-    // URL: GET /api/Social/feed/{userId}
+    // --- 1. GET FEED (FIXED) ---
     [HttpGet("feed/{userId}")]
     public async Task<ActionResult<object>> GetFeed(int userId)
     {
         try
         {
-            // Get IDs of friends (Accepted connections only)
+            // Get IDs of friends
             var friendIds = await _context.UserConnections
                 .AsNoTracking()
                 .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
                 .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
                 .ToListAsync();
 
-            // Safety: Initialize if null and add user's own ID
-            friendIds ??= new List<int>();
             friendIds.Add(userId); 
 
+            // Optimized projection: removed .Include() as .Select() handles data fetching directly
             var posts = await _context.SocialPosts
                 .AsNoTracking()
                 .Where(p => friendIds.Contains(p.UserId))
-                .Include(p => p.User)
-                .Include(p => p.Likes)
-                .Include(p => p.Comments!) 
-                    .ThenInclude(c => c.User)
                 .OrderByDescending(p => p.CreatedAt)
                 .Select(p => new 
                 {
@@ -54,17 +48,17 @@ public class SocialController : ControllerBase
                     p.JobTitle,
                     p.SecondPartyName,
                     p.CreatedAt,
-                    LikesCount = p.Likes == null ? 0 : p.Likes.Count,
-                    MyReaction = p.Likes != null ? p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault() : null,
-                    IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
+                    // FIXED: Using direct LINQ methods which translate better to SQL
+                    LikesCount = p.Likes.Count(),
+                    MyReaction = p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault(),
+                    IsLiked = p.Likes.Any(l => l.UserId == userId),
                     
-                    // ✅ FIXED: Using Enumerable.Empty to prevent CS0173 Build Error and 500 crashes
-                    Comments = (p.Comments ?? Enumerable.Empty<PostComment>()).Select(c => new {
+                    Comments = p.Comments.OrderBy(c => c.CreatedAt).Select(c => new {
                         c.CommentId,
                         c.Content,
                         c.CreatedAt,
                         User = c.User == null ? null : new { c.User.UserId, c.User.FullName, c.User.ProfileImageUrl }
-                    }).OrderBy(c => c.CreatedAt).ToList()
+                    }).ToList()
                 })
                 .ToListAsync();
 
@@ -72,7 +66,6 @@ public class SocialController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Log to console for debugging
             Console.WriteLine($"Social Feed Error: {ex.Message}");
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
@@ -88,9 +81,9 @@ public class SocialController : ControllerBase
         if (existing != null)
         {
             if (existing.ReactionType == reaction || string.IsNullOrEmpty(reaction))
-                _context.PostLikes.Remove(existing); // Toggle off
+                _context.PostLikes.Remove(existing);
             else
-                existing.ReactionType = reaction; // Update reaction
+                existing.ReactionType = reaction;
         }
         else if (!string.IsNullOrEmpty(reaction))
         {
@@ -111,7 +104,6 @@ public class SocialController : ControllerBase
         _context.PostComments.Add(comment);
         await _context.SaveChangesAsync();
 
-        // Return full object with User info for immediate UI update
         var fullComment = await _context.PostComments
             .Include(c => c.User)
             .Where(c => c.CommentId == comment.CommentId)
