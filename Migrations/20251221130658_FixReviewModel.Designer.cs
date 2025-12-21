@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251221130658_FixReviewModel")]
+    partial class FixReviewModel
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -718,20 +720,21 @@ namespace khidma_backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int>("ReceiverId")
-                        .HasColumnType("int");
-
                     b.Property<int>("RequesterId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("TargetId")
                         .HasColumnType("int");
 
                     b.HasKey("ConnectionId");
 
-                    b.HasIndex("ReceiverId");
-
                     b.HasIndex("RequesterId");
+
+                    b.HasIndex("TargetId");
 
                     b.ToTable("UserConnections");
                 });
@@ -1000,21 +1003,21 @@ namespace khidma_backend.Migrations
 
             modelBuilder.Entity("khidma_backend.Models.UserConnection", b =>
                 {
-                    b.HasOne("khidma_backend.Models.User", "Receiver")
-                        .WithMany()
-                        .HasForeignKey("ReceiverId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("khidma_backend.Models.User", "Requester")
                         .WithMany()
                         .HasForeignKey("RequesterId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Receiver");
+                    b.HasOne("khidma_backend.Models.User", "Target")
+                        .WithMany()
+                        .HasForeignKey("TargetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.Navigation("Requester");
+
+                    b.Navigation("Target");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.UserSkill", b =>

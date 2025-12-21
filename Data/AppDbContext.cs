@@ -9,7 +9,7 @@ public class AppDbContext : DbContext
     {
     }
 
-    // ================== Existing DbSets ==================
+    // ================== DbSets (Tables) ==================
     public DbSet<User> Users { get; set; } = null!;
     public DbSet<Job> Jobs { get; set; } = null!;
     public DbSet<Bid> Bids { get; set; } = null!;
@@ -26,10 +26,14 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<JobComment> JobComments { get; set; } = null!;
+    
+    // ✅ User Connections
     public DbSet<UserConnection> UserConnections { get; set; } = null!;
-// Inside AppDbContext.cs class
-public DbSet<UserAiProfile> UserAiProfiles { get; set; }
-    // ================== ✅ NEW SOCIAL FEED TABLES ==================
+
+    // ✅ AI Profile
+    public DbSet<UserAiProfile> UserAiProfiles { get; set; } = null!;
+
+    // ✅ Social Feed
     public DbSet<SocialPost> SocialPosts { get; set; } = null!;
     public DbSet<PostLike> PostLikes { get; set; } = null!;
     public DbSet<PostComment> PostComments { get; set; } = null!;
@@ -238,7 +242,8 @@ public DbSet<UserAiProfile> UserAiProfiles { get; set; }
             .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ========== User Connections ==========
+        // ========== ✅ User Connections (Fixed) ==========
+        // Matches the Controller using 'Receiver' not 'Target'
         modelBuilder.Entity<UserConnection>()
             .HasOne(c => c.Requester)
             .WithMany()
@@ -246,12 +251,12 @@ public DbSet<UserAiProfile> UserAiProfiles { get; set; }
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<UserConnection>()
-            .HasOne(c => c.Target)
+            .HasOne(c => c.Receiver)
             .WithMany()
-            .HasForeignKey(c => c.TargetId)
+            .HasForeignKey(c => c.ReceiverId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // ================== ✅ NEW SOCIAL FEED CONFIGURATION ==================
+        // ========== Social Feed Configuration ==========
         
         // Social Post
         modelBuilder.Entity<SocialPost>(entity =>

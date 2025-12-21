@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace khidma_backend.Controllers;
 
+public class UpdateStatusDto { public string Status { get; set; } = string.Empty; }
+
 [ApiController]
 [Route("api/[controller]")]
 public class SocialController : ControllerBase
@@ -16,19 +18,18 @@ public class SocialController : ControllerBase
         _context = context;
     }
 
-    // --- 1. GET FEED (Updated to include Reactions) ---
+    // --- 1. GET FEED ---
     [HttpGet("feed/{userId}")]
     public async Task<ActionResult<object>> GetFeed(int userId)
     {
+        // ✅ FIXED: Using ReceiverId and Enum Status
         var friendIds = await _context.UserConnections
             .AsNoTracking()
-            .Where(c => (c.RequesterId == userId || c.TargetId == userId) && c.Status == "Accepted")
-            .Select(c => c.RequesterId == userId ? c.TargetId : c.RequesterId)
+            .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
+            .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
             .ToListAsync();
 
-        friendIds.Add(userId); 
-
-        if (!friendIds.Any()) return Ok(new List<object>());
+        friendIds.Add(userId); // Include own posts
 
         var posts = await _context.SocialPosts
             .AsNoTracking()
@@ -48,9 +49,7 @@ public class SocialController : ControllerBase
                 p.JobTitle,
                 p.SecondPartyName,
                 p.CreatedAt,
-                // Total count of both likes and reactions (Requirement 4)
                 LikesCount = p.Likes == null ? 0 : p.Likes.Count,
-                // Returns the specific reaction type if the user has interacted (Requirement 3)
                 MyReaction = p.Likes != null ? p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault() : null,
                 IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
                 Comments = p.Comments!.Select(c => new {
@@ -65,7 +64,7 @@ public class SocialController : ControllerBase
         return Ok(posts);
     }
 
-    // --- 2. CONSOLIDATED REACT/LIKE (Requirement 1, 2 & 3) ---
+    // --- 2. REACT/LIKE ---
     [HttpPost("posts/{postId}/react")]
     public async Task<IActionResult> ReactToPost(int postId, [FromQuery] int userId, [FromQuery] string? reaction)
     {
@@ -74,34 +73,21 @@ public class SocialController : ControllerBase
 
         if (existing != null)
         {
-            // If user selects the same reaction again, remove it (toggle off)
-            // or if reaction is explicitly null/empty (Requirement 3)
             if (existing.ReactionType == reaction || string.IsNullOrEmpty(reaction))
-            {
-                _context.PostLikes.Remove(existing);
-            }
+                _context.PostLikes.Remove(existing); // Toggle off
             else
-            {
-                // Update to a different reaction type
-                existing.ReactionType = reaction;
-            }
+                existing.ReactionType = reaction; // Update reaction
         }
         else if (!string.IsNullOrEmpty(reaction))
         {
-            // Create a new interaction (Requirement 3)
-            _context.PostLikes.Add(new PostLike 
-            { 
-                PostId = postId, 
-                UserId = userId, 
-                ReactionType = reaction 
-            });
+            _context.PostLikes.Add(new PostLike { PostId = postId, UserId = userId, ReactionType = reaction });
         }
 
         await _context.SaveChangesAsync();
         return Ok();
     }
 
-    // --- 3. COMMENT ON POST ---
+    // --- 3. COMMENT ---
     [HttpPost("posts/comment")]
     public async Task<IActionResult> AddComment([FromBody] PostComment comment)
     {
@@ -111,6 +97,7 @@ public class SocialController : ControllerBase
         _context.PostComments.Add(comment);
         await _context.SaveChangesAsync();
 
+        // Return full object with User info
         var fullComment = await _context.PostComments
             .Include(c => c.User)
             .Where(c => c.CommentId == comment.CommentId)
@@ -125,31 +112,49 @@ public class SocialController : ControllerBase
         return Ok(fullComment);
     }
 
-    // --- CONNECTIONS LOGIC ---
+    // --- 4. CONNECTIONS ---
     
+    // Check Connection Status
+    [HttpGet("status/{requesterId}/{targetId}")]
+    public async Task<ActionResult<object>> GetConnectionStatus(int requesterId, int targetId)
+    {
+        // ✅ FIXED: Using ReceiverId
+        var conn = await _context.UserConnections
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => 
+                (c.RequesterId == requesterId && c.ReceiverId == targetId) ||
+                (c.RequesterId == targetId && c.ReceiverId == requesterId));
+
+        if (conn == null) return Ok(new { status = "None" });
+        return Ok(new { status = conn.Status.ToString() }); // Convert Enum to string
+    }
+
+    // Send Connection Request
     [HttpPost("connect")]
     public async Task<IActionResult> Connect([FromBody] UserConnection req)
     {
+        // ✅ FIXED: Using ReceiverId and Enum
         var existing = await _context.UserConnections
             .FirstOrDefaultAsync(c => 
-                (c.RequesterId == req.RequesterId && c.TargetId == req.TargetId) ||
-                (c.RequesterId == req.TargetId && c.TargetId == req.RequesterId));
+                (c.RequesterId == req.RequesterId && c.ReceiverId == req.ReceiverId) ||
+                (c.RequesterId == req.ReceiverId && c.ReceiverId == req.RequesterId));
 
         if (existing != null) 
         {
-            if (existing.Status == "Pending") return BadRequest("Connection request already pending.");
-            if (existing.Status == "Accepted") return BadRequest("You are already connected.");
+            if (existing.Status == ConnectionStatus.Pending) return BadRequest("Connection request already pending.");
+            if (existing.Status == ConnectionStatus.Accepted) return BadRequest("You are already connected.");
             return BadRequest("Connection previously rejected.");
         }
 
-        req.Status = "Pending";
+        req.Status = ConnectionStatus.Pending;
         req.CreatedAt = DateTime.UtcNow;
         _context.UserConnections.Add(req);
 
+        // Notify Target (Receiver)
         var requester = await _context.Users.FindAsync(req.RequesterId);
         var notif = new Notification
         {
-            UserId = req.TargetId,
+            UserId = req.ReceiverId, // ✅ Use ReceiverId
             Title = "New Connection Request",
             Message = $"{requester?.FullName ?? "A user"} sent you a connection request.",
             Type = NotificationType.ConnectionRequest,
@@ -161,30 +166,35 @@ public class SocialController : ControllerBase
         return Ok(req);
     }
 
+    // Get My Connections (Accepted Friends)
     [HttpGet("connections/{userId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetConnections(int userId)
     {
         var connections = await _context.UserConnections
             .AsNoTracking()
-            .Where(c => (c.RequesterId == userId || c.TargetId == userId) && c.Status == "Accepted")
+            // ✅ FIXED: Using ReceiverId and Enum
+            .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
             .Include(c => c.Requester)
-            .Include(c => c.Target)
+            .Include(c => c.Receiver) // ✅ Changed from Target to Receiver
             .Select(c => new 
             {
                 c.ConnectionId,
-                Friend = c.RequesterId == userId ? c.Target : c.Requester,
+                Friend = c.RequesterId == userId ? c.Receiver : c.Requester,
                 Since = c.CreatedAt
             })
             .ToListAsync();
+
         return Ok(connections);
     }
 
+    // Get Pending Requests (To Me)
     [HttpGet("requests/{userId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetPendingRequests(int userId)
     {
         var requests = await _context.UserConnections
             .AsNoTracking()
-            .Where(c => c.TargetId == userId && c.Status == "Pending")
+            // ✅ FIXED: Using ReceiverId and Enum
+            .Where(c => c.ReceiverId == userId && c.Status == ConnectionStatus.Pending)
             .Include(c => c.Requester)
             .Select(c => new 
             {
@@ -193,18 +203,25 @@ public class SocialController : ControllerBase
                 SentAt = c.CreatedAt
             })
             .ToListAsync();
+
         return Ok(requests);
     }
 
+    // Accept/Reject Request
     [HttpPut("connection/{connectionId}")]
     public async Task<IActionResult> RespondToConnection(int connectionId, [FromBody] UpdateStatusDto dto)
     {
         var conn = await _context.UserConnections.FindAsync(connectionId);
         if (conn == null) return NotFound();
-        conn.Status = dto.Status;
-        await _context.SaveChangesAsync();
-        return Ok(conn);
+
+        // ✅ FIXED: Parse string to Enum
+        if (Enum.TryParse<ConnectionStatus>(dto.Status, true, out var newStatus))
+        {
+            conn.Status = newStatus;
+            await _context.SaveChangesAsync();
+            return Ok(conn);
+        }
+
+        return BadRequest("Invalid status");
     }
 }
-
-public class UpdateStatusDto { public string Status { get; set; } = string.Empty; }

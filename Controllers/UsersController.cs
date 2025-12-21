@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace khidma_backend.Controllers;
 
-// DTO for Profile Updates
+// DTOs
 public class UserUpdateDto
 {
     public string FullName { get; set; } = string.Empty;
@@ -25,7 +25,6 @@ public class UserUpdateDto
     public string? LinkedinUrl { get; set; }
 }
 
-// DTO for fetching full profile with stats
 public class UserProfileDto
 {
     public User User { get; set; }
@@ -61,18 +60,17 @@ public class UsersController : ControllerBase
         return Ok(user);
     }
 
-    // GET: api/Users/profile/{id} - Get Full Profile with Stats
+    // GET: api/Users/profile/{id}
     [HttpGet("profile/{id}")]
     public async Task<ActionResult<UserProfileDto>> GetFullProfile(int id)
     {
         var user = await _context.Users
             .AsNoTracking()
-            .Include(u => u.ReviewsReceived)
             .FirstOrDefaultAsync(u => u.UserId == id);
 
         if (user == null) return NotFound();
 
-        // Calculate Stats
+        // 1. Calculate Completed Jobs
         int completedJobs = 0;
         if (user.UserType == UserType.Freelancer)
         {
@@ -80,15 +78,23 @@ public class UsersController : ControllerBase
         }
         else
         {
-            completedJobs = await _context.Jobs.CountAsync(j => j.ClientId == id && j.Status == JobStatus.Completed);
+            // For clients, count jobs that reached a serious stage
+            completedJobs = await _context.Jobs.CountAsync(j => 
+                j.ClientId == id && 
+                (j.Status == JobStatus.Completed || j.Status == JobStatus.Assigned || j.Status == JobStatus.InProgress)
+            );
         }
 
-        double avgRating = 0;
-        if (user.ReviewsReceived != null && user.ReviewsReceived.Any())
-        {
-            avgRating = user.ReviewsReceived.Average(r => r.Rating);
-        }
+        // 2. Calculate Rating (Live from Reviews Table)
+        // Note: Using RevieweeId to match your new model
+        var reviews = await _context.Reviews
+            .Where(r => r.RevieweeId == id)
+            .Select(r => r.Rating)
+            .ToListAsync();
 
+        double avgRating = reviews.Any() ? reviews.Average() : 0;
+
+        // 3. Success Rate (Simplified logic)
         double successRate = completedJobs > 0 ? 100 : 0; 
 
         return Ok(new UserProfileDto
