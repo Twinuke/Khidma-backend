@@ -136,3 +136,22 @@ C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Deb
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
 C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Https.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Binder.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Physical.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileSystemGlobbing.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Hosting.Abstractions.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Debug.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.ObjectPool.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.IO.Pipelines.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Reflection.Metadata.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll

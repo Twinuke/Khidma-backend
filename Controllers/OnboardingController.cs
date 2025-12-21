@@ -26,6 +26,19 @@ public class OnboardingController : ControllerBase
         public string Confidence { get; set; } = string.Empty;
     }
 
+    // ✅ NEW: GET endpoint to fetch the AI Profile data
+    [HttpGet("{userId}")]
+    public async Task<ActionResult<UserAiProfile>> GetProfile(int userId)
+    {
+        var profile = await _context.UserAiProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.UserId == userId);
+
+        if (profile == null) return NotFound();
+
+        return Ok(profile);
+    }
+
     [HttpPost]
     public async Task<IActionResult> SaveProfile([FromBody] OnboardingRequest request)
     {

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using khidma_backend.Data;
 
@@ -10,9 +11,10 @@ using khidma_backend.Data;
 namespace khidma_backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251221102501_hiroro")]
+    partial class hiroro
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -196,8 +198,8 @@ namespace khidma_backend.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<int>("ClientId")
                         .HasColumnType("int");
@@ -207,27 +209,28 @@ namespace khidma_backend.Migrations
                         .HasColumnType("datetime(6)")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
+                    b.Property<DateTime?>("Deadline")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("ExperienceLevel")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
 
                     b.Property<bool>("IsRemote")
                         .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
 
                     b.HasKey("JobId");
 
@@ -280,6 +283,9 @@ namespace khidma_backend.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<int?>("JobId")
+                        .HasColumnType("int");
+
                     b.Property<int>("SenderId")
                         .HasColumnType("int");
 
@@ -292,6 +298,8 @@ namespace khidma_backend.Migrations
                     b.HasKey("MessageId");
 
                     b.HasIndex("ConversationId");
+
+                    b.HasIndex("JobId");
 
                     b.HasIndex("SenderId");
 
@@ -596,9 +604,6 @@ namespace khidma_backend.Migrations
                         .HasColumnType("datetime(6)")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
 
-                    b.Property<string>("CvUrl")
-                        .HasColumnType("LONGTEXT");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -628,10 +633,6 @@ namespace khidma_backend.Migrations
 
                     b.Property<double?>("Latitude")
                         .HasColumnType("double");
-
-                    b.Property<string>("LinkedinUrl")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
 
                     b.Property<double?>("Longitude")
                         .HasColumnType("double");
@@ -871,6 +872,10 @@ namespace khidma_backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("khidma_backend.Models.Job", null)
+                        .WithMany("Messages")
+                        .HasForeignKey("JobId");
+
                     b.HasOne("khidma_backend.Models.User", "Sender")
                         .WithMany("SentMessages")
                         .HasForeignKey("SenderId")
@@ -1054,6 +1059,8 @@ namespace khidma_backend.Migrations
                     b.Navigation("Bids");
 
                     b.Navigation("Contracts");
+
+                    b.Navigation("Messages");
                 });
 
             modelBuilder.Entity("khidma_backend.Models.Skill", b =>
