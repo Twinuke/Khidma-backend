@@ -19,49 +19,63 @@ public class SocialController : ControllerBase
     }
 
     // --- 1. GET FEED ---
+    // URL: GET /api/Social/feed/{userId}
     [HttpGet("feed/{userId}")]
     public async Task<ActionResult<object>> GetFeed(int userId)
     {
-        // ✅ FIXED: Using ReceiverId and Enum Status
-        var friendIds = await _context.UserConnections
-            .AsNoTracking()
-            .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
-            .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
-            .ToListAsync();
+        try
+        {
+            // Get IDs of friends (Accepted connections only)
+            var friendIds = await _context.UserConnections
+                .AsNoTracking()
+                .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
+                .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
+                .ToListAsync();
 
-        friendIds.Add(userId); // Include own posts
+            // Safety: Initialize if null and add user's own ID
+            friendIds ??= new List<int>();
+            friendIds.Add(userId); 
 
-        var posts = await _context.SocialPosts
-            .AsNoTracking()
-            .Where(p => friendIds.Contains(p.UserId))
-            .Include(p => p.User)
-            .Include(p => p.Likes)
-            .Include(p => p.Comments!) 
-                .ThenInclude(c => c.User)
-            .OrderByDescending(p => p.CreatedAt)
-            .Select(p => new 
-            {
-                p.PostId,
-                p.UserId,
-                User = p.User == null ? null : new { p.User.UserId, p.User.FullName, p.User.ProfileImageUrl },
-                p.Type,
-                p.JobId,
-                p.JobTitle,
-                p.SecondPartyName,
-                p.CreatedAt,
-                LikesCount = p.Likes == null ? 0 : p.Likes.Count,
-                MyReaction = p.Likes != null ? p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault() : null,
-                IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
-                Comments = p.Comments!.Select(c => new {
-                    c.CommentId,
-                    c.Content,
-                    c.CreatedAt,
-                    User = c.User == null ? null : new { c.User.UserId, c.User.FullName, c.User.ProfileImageUrl }
-                }).OrderBy(c => c.CreatedAt).ToList()
-            })
-            .ToListAsync();
+            var posts = await _context.SocialPosts
+                .AsNoTracking()
+                .Where(p => friendIds.Contains(p.UserId))
+                .Include(p => p.User)
+                .Include(p => p.Likes)
+                .Include(p => p.Comments!) 
+                    .ThenInclude(c => c.User)
+                .OrderByDescending(p => p.CreatedAt)
+                .Select(p => new 
+                {
+                    p.PostId,
+                    p.UserId,
+                    User = p.User == null ? null : new { p.User.UserId, p.User.FullName, p.User.ProfileImageUrl },
+                    p.Type,
+                    p.JobId,
+                    p.JobTitle,
+                    p.SecondPartyName,
+                    p.CreatedAt,
+                    LikesCount = p.Likes == null ? 0 : p.Likes.Count,
+                    MyReaction = p.Likes != null ? p.Likes.Where(l => l.UserId == userId).Select(l => l.ReactionType).FirstOrDefault() : null,
+                    IsLiked = p.Likes != null && p.Likes.Any(l => l.UserId == userId),
+                    
+                    // ✅ FIXED: Using Enumerable.Empty to prevent CS0173 Build Error and 500 crashes
+                    Comments = (p.Comments ?? Enumerable.Empty<PostComment>()).Select(c => new {
+                        c.CommentId,
+                        c.Content,
+                        c.CreatedAt,
+                        User = c.User == null ? null : new { c.User.UserId, c.User.FullName, c.User.ProfileImageUrl }
+                    }).OrderBy(c => c.CreatedAt).ToList()
+                })
+                .ToListAsync();
 
-        return Ok(posts);
+            return Ok(posts);
+        }
+        catch (Exception ex)
+        {
+            // Log to console for debugging
+            Console.WriteLine($"Social Feed Error: {ex.Message}");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
 
     // --- 2. REACT/LIKE ---
@@ -97,7 +111,7 @@ public class SocialController : ControllerBase
         _context.PostComments.Add(comment);
         await _context.SaveChangesAsync();
 
-        // Return full object with User info
+        // Return full object with User info for immediate UI update
         var fullComment = await _context.PostComments
             .Include(c => c.User)
             .Where(c => c.CommentId == comment.CommentId)
@@ -113,12 +127,9 @@ public class SocialController : ControllerBase
     }
 
     // --- 4. CONNECTIONS ---
-    
-    // Check Connection Status
     [HttpGet("status/{requesterId}/{targetId}")]
     public async Task<ActionResult<object>> GetConnectionStatus(int requesterId, int targetId)
     {
-        // ✅ FIXED: Using ReceiverId
         var conn = await _context.UserConnections
             .AsNoTracking()
             .FirstOrDefaultAsync(c => 
@@ -126,14 +137,15 @@ public class SocialController : ControllerBase
                 (c.RequesterId == targetId && c.ReceiverId == requesterId));
 
         if (conn == null) return Ok(new { status = "None" });
-        return Ok(new { status = conn.Status.ToString() }); // Convert Enum to string
+        return Ok(new { status = conn.Status.ToString() }); 
     }
 
-    // Send Connection Request
     [HttpPost("connect")]
     public async Task<IActionResult> Connect([FromBody] UserConnection req)
     {
-        // ✅ FIXED: Using ReceiverId and Enum
+        if (req.RequesterId <= 0 || req.ReceiverId <= 0)
+            return BadRequest("Invalid Requester or Receiver ID.");
+
         var existing = await _context.UserConnections
             .FirstOrDefaultAsync(c => 
                 (c.RequesterId == req.RequesterId && c.ReceiverId == req.ReceiverId) ||
@@ -150,11 +162,10 @@ public class SocialController : ControllerBase
         req.CreatedAt = DateTime.UtcNow;
         _context.UserConnections.Add(req);
 
-        // Notify Target (Receiver)
         var requester = await _context.Users.FindAsync(req.RequesterId);
         var notif = new Notification
         {
-            UserId = req.ReceiverId, // ✅ Use ReceiverId
+            UserId = req.ReceiverId, 
             Title = "New Connection Request",
             Message = $"{requester?.FullName ?? "A user"} sent you a connection request.",
             Type = NotificationType.ConnectionRequest,
@@ -166,16 +177,14 @@ public class SocialController : ControllerBase
         return Ok(req);
     }
 
-    // Get My Connections (Accepted Friends)
     [HttpGet("connections/{userId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetConnections(int userId)
     {
         var connections = await _context.UserConnections
             .AsNoTracking()
-            // ✅ FIXED: Using ReceiverId and Enum
             .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
             .Include(c => c.Requester)
-            .Include(c => c.Receiver) // ✅ Changed from Target to Receiver
+            .Include(c => c.Receiver)
             .Select(c => new 
             {
                 c.ConnectionId,
@@ -187,13 +196,11 @@ public class SocialController : ControllerBase
         return Ok(connections);
     }
 
-    // Get Pending Requests (To Me)
     [HttpGet("requests/{userId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetPendingRequests(int userId)
     {
         var requests = await _context.UserConnections
             .AsNoTracking()
-            // ✅ FIXED: Using ReceiverId and Enum
             .Where(c => c.ReceiverId == userId && c.Status == ConnectionStatus.Pending)
             .Include(c => c.Requester)
             .Select(c => new 
@@ -207,14 +214,12 @@ public class SocialController : ControllerBase
         return Ok(requests);
     }
 
-    // Accept/Reject Request
     [HttpPut("connection/{connectionId}")]
     public async Task<IActionResult> RespondToConnection(int connectionId, [FromBody] UpdateStatusDto dto)
     {
         var conn = await _context.UserConnections.FindAsync(connectionId);
         if (conn == null) return NotFound();
 
-        // ✅ FIXED: Parse string to Enum
         if (Enum.TryParse<ConnectionStatus>(dto.Status, true, out var newStatus))
         {
             conn.Status = newStatus;

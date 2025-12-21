@@ -41,16 +41,32 @@ public class BidsController : ControllerBase
         return Ok(bid);
     }
 
-    // GET: api/Bids/job/{jobId}
+    // ✅ FIXED: Corrected 'Proposal' error here
     [HttpGet("job/{jobId}")]
-    public async Task<ActionResult<IEnumerable<Bid>>> GetBidsForJob(int jobId)
+    public async Task<ActionResult<IEnumerable<object>>> GetBidsForJob(int jobId)
     {
         var bids = await _context.Bids
             .AsNoTracking()
             .Include(b => b.Freelancer) 
             .Where(b => b.JobId == jobId)
             .OrderByDescending(b => b.CreatedAt)
+            .Select(b => new 
+            {
+                b.BidId,
+                b.FreelancerId,
+                // Handle potential null Freelancer
+                FreelancerName = b.Freelancer != null ? b.Freelancer.FullName : "Unknown",
+                FreelancerAvatar = b.Freelancer != null ? b.Freelancer.ProfileImageUrl : null,
+                BidDate = b.CreatedAt,
+                Amount = b.BidAmount,
+                
+                // ✅ FIX: Map 'ProposalText' (DB) to 'Proposal' (Frontend)
+                Proposal = b.ProposalText, 
+                
+                b.Status
+            })
             .ToListAsync();
+        
         return Ok(bids);
     }
 
@@ -110,7 +126,7 @@ public class BidsController : ControllerBase
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
     }
 
-    // PUT: api/Bids/{id}/accept (UPDATED WITH SOCIAL POST)
+    // PUT: api/Bids/{id}/accept
     [HttpPut("{id}/accept")]
     public async Task<IActionResult> AcceptBid(int id)
     {
@@ -165,15 +181,14 @@ public class BidsController : ControllerBase
             .ToListAsync();
         foreach (var other in otherBids) other.Status = BidStatus.Rejected;
 
-        // ✅ NEW: Create Social Post for "Bid Accepted"
-        // The Actor is the Freelancer (UserId = bid.FreelancerId)
+        // 7. Social Post
         var post = new SocialPost
         {
             UserId = bid.FreelancerId,
             Type = PostType.BidAccepted,
             JobId = job.JobId,
             JobTitle = job.Title,
-            SecondPartyName = bid.Job?.Client?.FullName ?? "Client", // Store Client Name
+            SecondPartyName = bid.Job?.Client?.FullName ?? "Client",
             CreatedAt = DateTime.UtcNow
         };
         _context.SocialPosts.Add(post);
