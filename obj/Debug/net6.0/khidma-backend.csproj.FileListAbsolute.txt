@@ -155,3 +155,4 @@ C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Re
 C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
 C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
 C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
+C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.staticwebassets.runtime.json

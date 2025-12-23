@@ -16,21 +16,14 @@ public class WorkspaceController : ControllerBase
         _context = context;
     }
 
-    // GET: api/Workspace/job/{jobId} - Get all updates for a job (accessible by both freelancer and client)
+    // 1. GET: Get all updates for a job
     [HttpGet("job/{jobId}")]
     public async Task<ActionResult<object>> GetJobUpdates(int jobId)
     {
         try
         {
-            // Verify job exists
-            var job = await _context.Jobs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(j => j.JobId == jobId);
-
-            if (job == null)
-            {
-                return NotFound(new { error = "Job not found" });
-            }
+            var jobExists = await _context.Jobs.AnyAsync(j => j.JobId == jobId);
+            if (!jobExists) return NotFound(new { error = "Job not found" });
 
             var updates = await _context.JobUpdates
                 .AsNoTracking()
@@ -45,6 +38,7 @@ public class WorkspaceController : ControllerBase
                     u.Title,
                     u.Content,
                     u.UpdateType,
+                    u.Status, // Returns 0, 1, or 2 to the UI
                     u.CreatedAt,
                     Freelancer = u.Freelancer == null ? null : new
                     {
@@ -59,54 +53,26 @@ public class WorkspaceController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Get Job Updates Error: {ex.Message}");
             return StatusCode(500, new { error = $"Failed to fetch updates: {ex.Message}" });
         }
     }
 
-    // POST: api/Workspace/update - Create a new job update
+    // 2. POST: Create a new job update (Freelancer only)
     [HttpPost("update")]
     public async Task<ActionResult<object>> CreateUpdate([FromBody] CreateUpdateDto dto)
     {
         try
         {
-            if (dto.JobId <= 0 || dto.FreelancerId <= 0)
-            {
-                return BadRequest(new { error = "Invalid Job ID or Freelancer ID" });
-            }
+            if (dto.JobId <= 0 || dto.FreelancerId <= 0 || string.IsNullOrWhiteSpace(dto.Content))
+                return BadRequest(new { error = "Invalid data" });
 
-            if (string.IsNullOrWhiteSpace(dto.Content))
-            {
-                return BadRequest(new { error = "Content is required" });
-            }
+            var job = await _context.Jobs.FirstOrDefaultAsync(j => j.JobId == dto.JobId);
+            if (job == null) return NotFound(new { error = "Job not found" });
 
-            // Verify job exists
-            var job = await _context.Jobs
-                .Include(j => j.Client)
-                .FirstOrDefaultAsync(j => j.JobId == dto.JobId);
+            // Ensure freelancer is hired
+            var isHired = await _context.Bids.AnyAsync(b => b.JobId == dto.JobId && b.FreelancerId == dto.FreelancerId && b.Status == BidStatus.Accepted);
+            if (!isHired) return BadRequest(new { error = "Unauthorized: You are not assigned to this job." });
 
-            if (job == null)
-            {
-                return NotFound(new { error = "Job not found" });
-            }
-
-            // Verify freelancer exists
-            var freelancer = await _context.Users.FindAsync(dto.FreelancerId);
-            if (freelancer == null)
-            {
-                return NotFound(new { error = "Freelancer not found" });
-            }
-
-            // Verify the freelancer is hired for this job
-            var bid = await _context.Bids
-                .FirstOrDefaultAsync(b => b.JobId == dto.JobId && b.FreelancerId == dto.FreelancerId && b.Status == BidStatus.Accepted);
-
-            if (bid == null)
-            {
-                return BadRequest(new { error = "You are not assigned to this job" });
-            }
-
-            // Create the update
             var update = new JobUpdate
             {
                 JobId = dto.JobId,
@@ -114,202 +80,115 @@ public class WorkspaceController : ControllerBase
                 Title = dto.Title,
                 Content = dto.Content,
                 UpdateType = dto.UpdateType ?? "Update",
+                Status = UpdateStatus.Pending, 
                 CreatedAt = DateTime.UtcNow
             };
 
             _context.JobUpdates.Add(update);
-            await _context.SaveChangesAsync();
 
-            // Send notification to client
-            var notification = new Notification
+            // Notify Client
+            _context.Notifications.Add(new Notification
             {
                 UserId = job.ClientId,
                 Title = "New Job Update",
-                Message = $"{freelancer.FullName} posted an update for '{job.Title}'",
+                Message = $"An update was posted for '{job.Title}'",
                 Type = NotificationType.General,
                 CreatedAt = DateTime.UtcNow
-            };
-            _context.Notifications.Add(notification);
+            });
+
             await _context.SaveChangesAsync();
-
-            // Return the created update with freelancer info
-            var createdUpdate = await _context.JobUpdates
-                .AsNoTracking()
-                .Include(u => u.Freelancer)
-                .Where(u => u.UpdateId == update.UpdateId)
-                .Select(u => new
-                {
-                    u.UpdateId,
-                    u.JobId,
-                    u.FreelancerId,
-                    u.Title,
-                    u.Content,
-                    u.UpdateType,
-                    u.CreatedAt,
-                    Freelancer = u.Freelancer == null ? null : new
-                    {
-                        u.Freelancer.UserId,
-                        u.Freelancer.FullName,
-                        u.Freelancer.ProfileImageUrl
-                    }
-                })
-                .FirstOrDefaultAsync();
-
-            return Ok(createdUpdate);
+            return Ok(update);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"=== CREATE UPDATE ERROR ===");
-            Console.WriteLine($"Message: {ex.Message}");
-            Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-            if (ex.InnerException != null)
-            {
-                Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-            }
-            Console.WriteLine($"===========================");
-
-            return StatusCode(500, new { error = $"Failed to create update: {ex.Message}" });
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 
-    // DELETE: api/Workspace/update/{updateId} - Delete an update
-    [HttpDelete("update/{updateId}")]
-    public async Task<IActionResult> DeleteUpdate(int updateId, [FromQuery] int freelancerId)
-    {
-        try
-        {
-            var update = await _context.JobUpdates.FindAsync(updateId);
-            if (update == null)
-            {
-                return NotFound(new { error = "Update not found" });
-            }
-
-            if (update.FreelancerId != freelancerId)
-            {
-                return Forbid("You can only delete your own updates");
-            }
-
-            _context.JobUpdates.Remove(update);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Update deleted successfully" });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Delete Update Error: {ex.Message}");
-            return StatusCode(500, new { error = $"Failed to delete update: {ex.Message}" });
-        }
-    }
-
-    // POST: api/Workspace/update/{updateId}/approve - Client approves an update
+    // 3. POST: Approve an update (Client only)
     [HttpPost("update/{updateId}/approve")]
     public async Task<IActionResult> ApproveUpdate(int updateId, [FromBody] UpdateResponseDto dto)
     {
         try
         {
-            var update = await _context.JobUpdates
-                .Include(u => u.Job)
-                .FirstOrDefaultAsync(u => u.UpdateId == updateId);
+            var update = await _context.JobUpdates.Include(u => u.Job).FirstOrDefaultAsync(u => u.UpdateId == updateId);
+            if (update == null) return NotFound();
+            if (update.Job?.ClientId != dto.ClientId) return Forbid();
 
-            if (update == null)
+            // ✅ CRITICAL FIX: Prevent double-processing
+            if (update.Status != UpdateStatus.Pending)
             {
-                return NotFound(new { error = "Update not found" });
+                return BadRequest(new { error = "This update has already been processed and cannot be changed." });
             }
 
-            // Verify client owns the job
-            if (update.Job?.ClientId != dto.ClientId)
-            {
-                return Forbid("You can only approve updates for your own jobs");
-            }
+            update.Status = UpdateStatus.Approved;
 
-            // Create approval notification for freelancer
-            var freelancer = await _context.Users.FindAsync(update.FreelancerId);
-            if (freelancer != null)
+            _context.Notifications.Add(new Notification
             {
-                var notification = new Notification
-                {
-                    UserId = update.FreelancerId,
-                    Title = "Update Approved",
-                    Message = $"Your update for '{update.Job?.Title ?? "the job"}' has been approved by the client.",
-                    Type = NotificationType.General,
-                    EntityId = update.JobId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Notifications.Add(notification);
-            }
+                UserId = update.FreelancerId,
+                Title = "Update Approved ✅",
+                Message = $"Your update for '{update.Job?.Title}' was approved. Reason: {dto.Response ?? "No comment provided"}",
+                Type = NotificationType.General,
+                EntityId = update.JobId,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Update approved successfully" });
+            return Ok(new { success = true });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Approve Update Error: {ex.Message}");
-            return StatusCode(500, new { error = $"Failed to approve update: {ex.Message}" });
+            return StatusCode(500, new { error = ex.Message });
         }
     }
 
-    // POST: api/Workspace/update/{updateId}/dismiss - Client dismisses an update
+    // 4. POST: Dismiss an update (Client only)
     [HttpPost("update/{updateId}/dismiss")]
     public async Task<IActionResult> DismissUpdate(int updateId, [FromBody] UpdateResponseDto dto)
     {
         try
         {
-            var update = await _context.JobUpdates
-                .Include(u => u.Job)
-                .FirstOrDefaultAsync(u => u.UpdateId == updateId);
+            var update = await _context.JobUpdates.Include(u => u.Job).FirstOrDefaultAsync(u => u.UpdateId == updateId);
+            if (update == null) return NotFound();
+            if (update.Job?.ClientId != dto.ClientId) return Forbid();
 
-            if (update == null)
+            // ✅ CRITICAL FIX: Prevent double-processing
+            if (update.Status != UpdateStatus.Pending)
             {
-                return NotFound(new { error = "Update not found" });
+                return BadRequest(new { error = "This update has already been processed and cannot be changed." });
             }
 
-            // Verify client owns the job
-            if (update.Job?.ClientId != dto.ClientId)
-            {
-                return Forbid("You can only dismiss updates for your own jobs");
-            }
+            update.Status = UpdateStatus.Dismissed;
 
-            // Create dismissal notification for freelancer
-            var freelancer = await _context.Users.FindAsync(update.FreelancerId);
-            if (freelancer != null)
+            _context.Notifications.Add(new Notification
             {
-                var notification = new Notification
-                {
-                    UserId = update.FreelancerId,
-                    Title = "Update Dismissed",
-                    Message = $"Your update for '{update.Job?.Title ?? "the job"}' was dismissed by the client.",
-                    Type = NotificationType.General,
-                    EntityId = update.JobId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.Notifications.Add(notification);
-            }
+                UserId = update.FreelancerId,
+                Title = "Update Dismissed ❌",
+                Message = $"The client requested changes on your update for '{update.Job?.Title}'. Feedback: {dto.Response ?? "Please review requirements."}",
+                Type = NotificationType.General,
+                EntityId = update.JobId,
+                CreatedAt = DateTime.UtcNow
+            });
 
             await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Update dismissed successfully" });
+            return Ok(new { success = true });
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Dismiss Update Error: {ex.Message}");
-            return StatusCode(500, new { error = $"Failed to dismiss update: {ex.Message}" });
+            return StatusCode(500, new { error = ex.Message });
         }
+    }
+
+    [HttpDelete("update/{updateId}")]
+    public async Task<IActionResult> DeleteUpdate(int updateId, [FromQuery] int freelancerId)
+    {
+        var update = await _context.JobUpdates.FindAsync(updateId);
+        if (update == null || update.FreelancerId != freelancerId) return Forbid();
+        _context.JobUpdates.Remove(update);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Deleted" });
     }
 }
 
-public class UpdateResponseDto
-{
-    public int ClientId { get; set; }
-    public string? Response { get; set; }
-}
-
-public class CreateUpdateDto
-{
-    public int JobId { get; set; }
-    public int FreelancerId { get; set; }
-    public string? Title { get; set; }
-    public string Content { get; set; } = string.Empty;
-    public string? UpdateType { get; set; }
-}
-
+public class UpdateResponseDto { public int ClientId { get; set; } public string? Response { get; set; } }
+public class CreateUpdateDto { public int JobId { get; set; } public int FreelancerId { get; set; } public string? Title { get; set; } public string Content { get; set; } = string.Empty; public string? UpdateType { get; set; } }

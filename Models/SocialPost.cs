@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace khidma_backend.Models;
 
@@ -17,27 +16,26 @@ public class SocialPost
     public int PostId { get; set; }
 
     [Required]
-    public int UserId { get; set; } // The "Actor" (e.g., the Client who posted, or Freelancer who got hired)
+    public int UserId { get; set; } 
 
     [Required]
     public PostType Type { get; set; }
 
-    public int? JobId { get; set; } // Link to the job for clicking
-
-    // Snapshot data to avoid deep nesting queries
+    public int? JobId { get; set; } 
     public string JobTitle { get; set; } = string.Empty;
-    public string? SecondPartyName { get; set; } // e.g., The Client name if the actor is Freelancer
+    public string? SecondPartyName { get; set; } 
     
-    // For general posts
     [Column(TypeName = "TEXT")]
-    public string? Content { get; set; } // Post content for GeneralPost type
+    public string? Content { get; set; } 
+
+    // ✅ ADD THESE THREE NEW FIELDS
+    public string? ImageUrl { get; set; }
+    public string? DocumentUrl { get; set; }
+    public string? DocumentName { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation
     public User? User { get; set; }
-    
-    // Interactions
     public ICollection<PostLike>? Likes { get; set; }
     public ICollection<PostComment>? Comments { get; set; }
 }

@@ -19,7 +19,7 @@ public class Program
         builder.Services.AddSwaggerGen();
         builder.Services.AddSignalR();
         
-        // ✅ NEW: Add HttpClient for AI requests
+        // Add HttpClient for AI requests
         builder.Services.AddHttpClient();
 
         // EF Core DbContext registration
@@ -79,6 +79,9 @@ public class Program
         // Configure the HTTP request pipeline.
         app.UseSwagger();
         app.UseSwaggerUI();
+
+        // ✅ FIXED: Added this to allow the app to save and serve uploaded images/docs
+        app.UseStaticFiles(); 
 
         app.UseCors(CorsPolicyName);
         app.MapHub<khidma_backend.Hubs.ChatHub>("/chatHub");
