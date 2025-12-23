@@ -23,6 +23,12 @@ public class Notification
     [Required]
     public int UserId { get; set; }
 
+    /// <summary>
+    /// Stores the ID of the related entity (e.g., JobId, PostId, or ConnectionId).
+    /// This was missing and causing the build errors in WorkspaceController.
+    /// </summary>
+    public int? EntityId { get; set; }
+
     [Required]
     [StringLength(100)]
     public string Title { get; set; } = string.Empty;
