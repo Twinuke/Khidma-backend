@@ -26,7 +26,9 @@ public class PaymentsController : ControllerBase
         _context = context;
         _configuration = configuration;
         // Use your test key or the default demo key
-        StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"] ?? "sk_test_4eC39HqLyjWDarjtT1zdp7dc";
+        StripeConfiguration.ApiKey =
+    _configuration["Stripe:SecretKey"]
+    ?? throw new Exception("Stripe SecretKey not configured");
     }
 
     // ✅ FIXED: Using DTO to handle the amount and user ID
