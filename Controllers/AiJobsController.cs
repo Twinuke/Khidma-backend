@@ -115,7 +115,11 @@ public class AiJobsController : ControllerBase
         var mySkills = SplitTags(profile.SelectedSkills);
         var myDomains = SplitTags(profile.SelectedDomains);
 
-        var allJobs = await _context.Jobs.Include(j => j.Client).Where(j => j.Status == JobStatus.Open).ToListAsync();
+        // Include the Client data so it's available for projection
+        var allJobs = await _context.Jobs
+            .Include(j => j.Client)
+            .Where(j => j.Status == JobStatus.Open)
+            .ToListAsync();
 
         var scoredJobs = allJobs.Select(job => 
         {
@@ -132,7 +136,24 @@ public class AiJobsController : ControllerBase
         .Where(x => x.Score > 0)
         .OrderByDescending(x => x.Score)
         .Take(20)
-        .Select(x => x.Job)
+        // ✅ FIXED: Project into the anonymous object format expected by JobCard.tsx
+        .Select(x => new 
+        {
+            x.Job.JobId,
+            x.Job.Title,
+            x.Job.Description,
+            x.Job.Budget,
+            x.Job.Category,
+            x.Job.Location,
+            x.Job.ExperienceLevel,
+            x.Job.IsRemote,
+            x.Job.CreatedAt,
+            x.Job.Status,
+            x.Job.ClientId,
+            ClientName = x.Job.Client?.FullName ?? "Unknown Client",
+            ClientAvatar = x.Job.Client?.ProfileImageUrl,
+            BidsCount = _context.Bids.Count(b => b.JobId == x.Job.JobId)
+        })
         .ToList();
 
         return Ok(scoredJobs);
