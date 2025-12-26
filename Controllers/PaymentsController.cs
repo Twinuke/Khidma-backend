@@ -7,7 +7,7 @@ using Stripe.Checkout;
 
 namespace khidma_backend.Controllers;
 
-// DTO to prevent 500 binding errors
+// DTO to prevent 500 binding errors and handle JSON body correctly
 public class StripeRequest
 {
     public decimal Amount { get; set; }
@@ -25,13 +25,21 @@ public class PaymentsController : ControllerBase
     {
         _context = context;
         _configuration = configuration;
-        // Use your test key or the default demo key
-        StripeConfiguration.ApiKey =
-    _configuration["Stripe:SecretKey"]
-    ?? throw new Exception("Stripe SecretKey not configured");
+        
+        // Pulling key from configuration to avoid GitHub Push Protection triggers
+        var secretKey = _configuration["Stripe:SecretKey"];
+        if (string.IsNullOrEmpty(secretKey))
+        {
+            // Fallback for local development if not in appsettings
+            StripeConfiguration.ApiKey = "sk_test_replace_this_in_appsettings";
+        }
+        else
+        {
+            StripeConfiguration.ApiKey = secretKey;
+        }
     }
 
-    // ✅ FIXED: Using DTO to handle the amount and user ID
+    // ✅ FIXED: Create a Stripe Checkout Session for Demo (Deposit)
     [HttpPost("create-checkout-session")]
     public async Task<ActionResult> CreateCheckoutSession([FromBody] StripeRequest request)
     {
@@ -46,18 +54,19 @@ public class PaymentsController : ControllerBase
                     {
                         PriceData = new SessionLineItemPriceDataOptions
                         {
-                            UnitAmount = (long)(request.Amount * 100), // Stripe uses cents
+                            UnitAmount = (long)(request.Amount * 100), // Convert to cents
                             Currency = "usd",
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
                                 Name = "Khidma Wallet Deposit",
-                                Description = "Adding funds to your Khidma account balance.",
+                                Description = $"Funding for User ID: {request.UserId}",
                             },
                         },
                         Quantity = 1,
                     },
                 },
                 Mode = "payment",
+                // In a production app, these would point to your mobile app deep links
                 SuccessUrl = "https://example.com/success", 
                 CancelUrl = "https://example.com/cancel",
             };
@@ -65,13 +74,11 @@ public class PaymentsController : ControllerBase
             var service = new SessionService();
             Session session = await service.CreateAsync(options);
 
-            // In a real app, you'd listen to a Webhook to update the balance.
-            // For this demo, we assume success for the UI.
             return Ok(new { url = session.Url });
         }
         catch (System.Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return StatusCode(500, new { message = ex.Message });
         }
     }
 
@@ -83,9 +90,13 @@ public class PaymentsController : ControllerBase
         if (user == null) return NotFound("User not found");
 
         if (user.Balance < request.Amount)
-            return BadRequest("Insufficient balance");
+            return BadRequest("Insufficient balance for withdrawal");
 
+        // Logic: Deduct from balance
         user.Balance -= request.Amount;
+        
+        // In a real app, you would use Stripe Payouts API here.
+        // For the demo, we just update the database balance.
         await _context.SaveChangesAsync();
         
         return Ok(new { message = "Withdrawal successful", newBalance = user.Balance });
@@ -127,7 +138,7 @@ public class PaymentsController : ControllerBase
         return Ok(payments);
     }
 
-    // POST: api/Payments
+    // POST: api/Payments (Internal record creation)
     [HttpPost]
     public async Task<ActionResult<khidma_backend.Models.Payment>> CreatePayment([FromBody] khidma_backend.Models.Payment payment)
     {
