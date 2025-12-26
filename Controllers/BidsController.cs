@@ -41,7 +41,6 @@ public class BidsController : ControllerBase
         return Ok(bid);
     }
 
-    // ✅ FIXED: Corrected 'Proposal' error here
     [HttpGet("job/{jobId}")]
     public async Task<ActionResult<IEnumerable<object>>> GetBidsForJob(int jobId)
     {
@@ -54,15 +53,11 @@ public class BidsController : ControllerBase
             {
                 b.BidId,
                 b.FreelancerId,
-                // Handle potential null Freelancer
                 FreelancerName = b.Freelancer != null ? b.Freelancer.FullName : "Unknown",
                 FreelancerAvatar = b.Freelancer != null ? b.Freelancer.ProfileImageUrl : null,
                 BidDate = b.CreatedAt,
                 Amount = b.BidAmount,
-                
-                // ✅ FIX: Map 'ProposalText' (DB) to 'Proposal' (Frontend)
                 Proposal = b.ProposalText, 
-                
                 b.Status
             })
             .ToListAsync();
@@ -85,6 +80,7 @@ public class BidsController : ControllerBase
     }
 
     // POST: api/Bids
+    // ✅ FIX: Added logic to notify the Client (Job Owner) when a bid is placed
     [HttpPost]
     public async Task<ActionResult<Bid>> CreateBid([FromBody] Bid bid)
     {
@@ -112,7 +108,8 @@ public class BidsController : ControllerBase
         bid.Status = BidStatus.Pending;
         _context.Bids.Add(bid);
 
-        var notif = new Notification
+        // 1. Notify the Freelancer
+        var freelancerNotif = new Notification
         {
             UserId = bid.FreelancerId,
             Title = "Bid Placed",
@@ -120,7 +117,18 @@ public class BidsController : ControllerBase
             Type = NotificationType.BidPlaced,
             CreatedAt = DateTime.UtcNow
         };
-        _context.Notifications.Add(notif);
+        _context.Notifications.Add(freelancerNotif);
+
+        // 2. Notify the Client (Job Owner)
+        var clientNotif = new Notification
+        {
+            UserId = job.ClientId, // Use ClientId from the Job model
+            Title = "New Bid Received",
+            Message = $"Hey! You just received a new bid of ${bid.BidAmount} on your job: {job.Title}",
+            Type = NotificationType.BidPlaced,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Notifications.Add(clientNotif);
 
         await _context.SaveChangesAsync();
         return CreatedAtAction(nameof(GetBid), new { id = bid.BidId }, bid);
@@ -142,10 +150,8 @@ public class BidsController : ControllerBase
         var job = await _context.Jobs.FindAsync(bid.JobId);
         if (job == null) return BadRequest("Job not found");
 
-        // 1. Update Bid
         bid.Status = BidStatus.Accepted;
 
-        // 2. Create Contract
         var contract = new Contract
         {
             JobId = bid.JobId,
@@ -157,14 +163,11 @@ public class BidsController : ControllerBase
         };
         _context.Contracts.Add(contract);
 
-        // 3. Update Job
         job.Status = JobStatus.Assigned;
 
-        // 4. Update Balance
         var freelancer = await _context.Users.FindAsync(bid.FreelancerId);
         if (freelancer != null) freelancer.Balance += bid.BidAmount;
 
-        // 5. Notify Freelancer
         var notif = new Notification
         {
             UserId = bid.FreelancerId,
@@ -175,13 +178,11 @@ public class BidsController : ControllerBase
         };
         _context.Notifications.Add(notif);
 
-        // 6. Reject others
         var otherBids = await _context.Bids
             .Where(b => b.JobId == bid.JobId && b.BidId != bid.BidId && b.Status == BidStatus.Pending)
             .ToListAsync();
         foreach (var other in otherBids) other.Status = BidStatus.Rejected;
 
-        // 7. Social Post
         var post = new SocialPost
         {
             UserId = bid.FreelancerId,

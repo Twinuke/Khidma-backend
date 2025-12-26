@@ -16,17 +16,16 @@ public class UserConnectionsController : ControllerBase
         _context = context;
     }
 
-    // ✅ 1. SEND REQUEST (Fixes 404 Error)
+    // ✅ 1. SEND REQUEST
     [HttpPost("send")]
     public async Task<IActionResult> SendRequest([FromBody] UserConnection request)
     {
         try
         {
-            // 1. Prevent self-connection
             if (request.RequesterId == request.ReceiverId)
                 return BadRequest("You cannot connect with yourself.");
 
-            // 2. Check if connection already exists
+            // Check if connection already exists
             var existing = await _context.UserConnections
                 .FirstOrDefaultAsync(c => 
                     (c.RequesterId == request.RequesterId && c.ReceiverId == request.ReceiverId) ||
@@ -45,7 +44,6 @@ public class UserConnectionsController : ControllerBase
                 await _context.SaveChangesAsync();
             }
 
-            // 3. Create New Request
             var newConnection = new UserConnection
             {
                 RequesterId = request.RequesterId,
@@ -65,7 +63,29 @@ public class UserConnectionsController : ControllerBase
         }
     }
 
-    // ✅ 2. GET PENDING REQUESTS
+    // ✅ 2. GET CONNECTION STATUS (Added for Profile Page)
+    [HttpGet("status/{userId}/{targetId}")]
+    public async Task<IActionResult> GetConnectionStatus(int userId, int targetId)
+    {
+        try
+        {
+            var connection = await _context.UserConnections
+                .FirstOrDefaultAsync(c => 
+                    (c.RequesterId == userId && c.ReceiverId == targetId) ||
+                    (c.RequesterId == targetId && c.ReceiverId == userId));
+
+            if (connection == null) 
+                return Ok(new { status = "None" });
+
+            return Ok(new { status = connection.Status.ToString() });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    // ✅ 3. GET PENDING REQUESTS
     [HttpGet("pending/{userId}")]
     public async Task<IActionResult> GetPendingRequests(int userId)
     {
@@ -100,7 +120,7 @@ public class UserConnectionsController : ControllerBase
         }
     }
 
-    // ✅ 3. GET CONNECTIONS
+    // ✅ 4. GET CONNECTIONS
     [HttpGet("connected/{userId}")]
     public async Task<IActionResult> GetConnections(int userId)
     {
@@ -129,7 +149,7 @@ public class UserConnectionsController : ControllerBase
         }
     }
 
-    // ✅ 4. ACCEPT REQUEST
+    // ✅ 5. ACCEPT REQUEST
     [HttpPost("accept/{connectionId}")]
     public async Task<IActionResult> AcceptRequest(int connectionId)
     {
@@ -148,7 +168,7 @@ public class UserConnectionsController : ControllerBase
         }
     }
 
-    // ✅ 5. REJECT REQUEST
+    // ✅ 6. REJECT REQUEST
     [HttpPost("reject/{connectionId}")]
     public async Task<IActionResult> RejectRequest(int connectionId)
     {

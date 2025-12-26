@@ -1,158 +1,82 @@
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\appsettings.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.staticwebassets.endpoints.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.exe
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.deps.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.runtimeconfig.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.pdb
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Humanizer.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Design.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Relational.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Memory.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Options.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Primitives.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.OpenApi.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.Swagger.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\System.Collections.Immutable.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\System.Diagnostics.DiagnosticSource.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.AssemblyReference.cache
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfoInputs.cache
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfo.cs
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.CoreCompileInputs.cache
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\scopedcss\bundle\khidma-backend.styles.css
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.build.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.development.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.build.endpoints.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.khidma-backend.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.khidma-backend.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.build.khidma-backend.props
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.buildMultiTargeting.khidma-backend.props
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.buildTransitive.khidma-backend.props
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.pack.json
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-b.0A2BB9AC.Up2Date
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\refint\khidma-backend.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.pdb
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.genruntimeconfig.cache
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\ref\khidma-backend.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\MySqlConnector.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Pomelo.EntityFrameworkCore.MySql.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.sourcelink.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\khidma-backend.exe
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\khidma-backend.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Relational.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Options.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Primitives.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.JsonWebTokens.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Logging.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Tokens.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.OpenApi.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.Swagger.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerGen.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerUI.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\System.Diagnostics.DiagnosticSource.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\System.IdentityModel.Tokens.Jwt.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\appsettings.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\BCrypt.Net-Next.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Humanizer.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Design.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Memory.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\MySqlConnector.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\Pomelo.EntityFrameworkCore.MySql.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\System.Collections.Immutable.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.AssemblyReference.cache
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfoInputs.cache
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfo.cs
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.CoreCompileInputs.cache
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cs
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cache
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.sourcelink.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets.build.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets.development.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.khidma-backend.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.build.khidma-backend.props
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.buildMultiTargeting.khidma-backend.props
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets\msbuild.buildTransitive.khidma-backend.props
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\staticwebassets.pack.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\scopedcss\bundle\khidma-backend.styles.css
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.CopyComplete
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\refint\khidma-backend.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.pdb
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\khidma-backend.deps.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\khidma-backend.runtimeconfig.json
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\bin\Debug\net6.0\khidma-backend.pdb
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\khidma-backend.genruntimeconfig.cache
-C:\Users\roger\OneDrive\Desktop\Khidma\Khidma-backend\obj\Debug\net6.0\ref\khidma-backend.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\BCrypt.Net-Next.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.JsonWebTokens.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Logging.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Tokens.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\khidma-backend\bin\Debug\net6.0\System.IdentityModel.Tokens.Jwt.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Https.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Binder.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.FileExtensions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Physical.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileSystemGlobbing.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Hosting.Abstractions.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Debug.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.ObjectPool.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.IO.Pipelines.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.Reflection.Metadata.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
-C:\Users\User\Desktop\Computer Science\Programming\Khidma\Khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Https.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Binder.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.FileExtensions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Physical.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileSystemGlobbing.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Hosting.Abstractions.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Debug.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.ObjectPool.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.IO.Pipelines.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Reflection.Metadata.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
-C:\Users\roger\OneDrive\Desktop\Khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.staticwebassets.runtime.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\appsettings.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\dotnet-tools.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.staticwebassets.runtime.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.staticwebassets.endpoints.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.exe
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.deps.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.runtimeconfig.json
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\khidma-backend.pdb
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\BCrypt.Net-Next.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Humanizer.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Https.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.AspNetCore.Server.Kestrel.Transport.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Design.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.EntityFrameworkCore.Relational.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Caching.Memory.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.Binder.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.EnvironmentVariables.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Configuration.FileExtensions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Diagnostics.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileProviders.Physical.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.FileSystemGlobbing.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Hosting.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Logging.Debug.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.ObjectPool.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Options.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.Extensions.Primitives.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Microsoft.OpenApi.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\MySqlConnector.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Pomelo.EntityFrameworkCore.MySql.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\Swashbuckle.AspNetCore.SwaggerUI.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.Collections.Immutable.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.Diagnostics.DiagnosticSource.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.IO.Pipelines.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.Reflection.Metadata.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.Runtime.CompilerServices.Unsafe.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\System.Text.Encodings.Web.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\bin\Debug\net6.0\runtimes\browser\lib\net6.0\System.Text.Encodings.Web.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.AssemblyReference.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\rpswa.dswa.cache.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfoInputs.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.AssemblyInfo.cs
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.csproj.CoreCompileInputs.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cs
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.sourcelink.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\rjimswa.dswa.cache.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\rjsmrazor.dswa.cache.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\rjsmcshtml.dswa.cache.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\scopedcss\bundle\khidma-backend.styles.css
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.build.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.build.json.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.development.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\staticwebassets.build.endpoints.json
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\swae.build.ex.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-b.0A2BB9AC.Up2Date
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\refint\khidma-backend.dll
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.pdb
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\khidma-backend.genruntimeconfig.cache
+C:\Users\user3\Desktop\khidma\khidma-backend\obj\Debug\net6.0\ref\khidma-backend.dll
