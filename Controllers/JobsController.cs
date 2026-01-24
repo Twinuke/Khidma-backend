@@ -159,6 +159,29 @@ public class JobsController : ControllerBase
         job.Status = JobStatus.Open;
         _context.Jobs.Add(job);
         await _context.SaveChangesAsync();
+
+        // ✅ Create notifications for all freelancers when a job is created
+        var freelancers = await _context.Users
+            .Where(u => u.UserType == UserType.Freelancer)
+            .ToListAsync();
+
+        foreach (var freelancer in freelancers)
+        {
+            var notification = new Notification
+            {
+                UserId = freelancer.UserId,
+                EntityId = job.JobId,
+                Title = "New Job Posted",
+                Message = $"A new job '{job.Title}' has been posted. Check it out!",
+                Type = NotificationType.System,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            };
+            _context.Notifications.Add(notification);
+        }
+
+        await _context.SaveChangesAsync();
+
         return CreatedAtAction(nameof(GetJobs), new { id = job.JobId }, job);
     }
 }

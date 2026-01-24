@@ -56,4 +56,22 @@ public class ReviewsController : ControllerBase
 
         return CreatedAtAction(nameof(GetUserReviews), new { userId = review.RevieweeId }, review);
     }
+
+    // DELETE: api/Reviews/{id}
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteReview(int id, [FromQuery] int userId)
+    {
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+            return NotFound();
+
+        // ✅ Only allow users to delete reviews on their own profile (where they are the reviewee)
+        if (review.RevieweeId != userId)
+            return Forbid("You can only delete reviews on your own profile.");
+
+        _context.Reviews.Remove(review);
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

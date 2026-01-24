@@ -65,6 +65,42 @@ public class EmailService
     }
 
     /// <summary>
+    /// Sends password reset verification email containing a deep link back into the Khidma app.
+    /// </summary>
+    public async Task<bool> SendPasswordResetEmailAsync(string toEmail, string deepLinkUrl)
+    {
+        try
+        {
+            var subject = "Verify & Reset Your Khidma Password";
+            var safeLink = WebUtility.HtmlEncode(deepLinkUrl);
+            var body = $@"
+                <html>
+                <body style='font-family: Arial, sans-serif; padding: 20px;'>
+                    <h2 style='color: #007AFF;'>Reset your Khidma password</h2>
+                    <p>Hello,</p>
+                    <p>Tap the button below to verify your request and open Khidma to set a new password.</p>
+                    <div style='margin: 28px 0;'>
+                        <a href='{safeLink}'
+                           style='display:inline-block;background:#2563EB;color:#fff;text-decoration:none;padding:14px 18px;border-radius:10px;font-weight:bold;'>
+                           Verify &amp; Reset Password
+                        </a>
+                    </div>
+                    <p style='color:#666;font-size:13px;'>If you did not request a password reset, you can safely ignore this email.</p>
+                    <p style='color:#666;font-size:13px;'>This link expires soon for your security.</p>
+                    <p style='color: #666; margin-top: 30px;'>Best regards,<br/>Khidma Team</p>
+                </body>
+                </html>";
+
+            return await SendEmailAsync(toEmail, subject, body);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error sending password reset email: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Generic email sender.
     /// </summary>
     public async Task<bool> SendEmailAsync(string toEmail, string subject, string body, bool isHtml = true)

@@ -23,6 +23,7 @@ public class AppDbContext : DbContext
     public DbSet<OtpCode> OtpCodes { get; set; } = null!;
     public DbSet<PhoneVerification> PhoneVerifications { get; set; } = null!;
     public DbSet<EmailVerification> EmailVerifications { get; set; } = null!;
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } = null!;
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Conversation> Conversations { get; set; } = null!;
     public DbSet<JobComment> JobComments { get; set; } = null!;
@@ -45,6 +46,14 @@ public class AppDbContext : DbContext
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP(6)");
             entity.Property(e => e.UserType).HasConversion<int>();
             entity.Property(e => e.Balance).HasColumnType("decimal(18,2)");
+        });
+
+        // ========== Password Reset Token ==========
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.ExpiresAt });
         });
 
         // User Relationships

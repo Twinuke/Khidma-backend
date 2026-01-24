@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace khidma_backend.Controllers;
 
@@ -15,12 +17,14 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _context;
     private readonly JwtService _jwtService;
     private readonly EmailService _emailService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(AppDbContext context, JwtService jwtService, EmailService emailService)
+    public AuthController(AppDbContext context, JwtService jwtService, EmailService emailService, IConfiguration configuration)
     {
         _context = context;
         _jwtService = jwtService;
         _emailService = emailService;
+        _configuration = configuration;
     }
 
     public class RegisterRequest
@@ -62,6 +66,53 @@ public class AuthController : ControllerBase
     {
         public string Token { get; set; } = string.Empty;
         public object User { get; set; } = null!;
+    }
+
+    public class PasswordResetRequestDto
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class PasswordResetUpdateDto
+    {
+        [Required]
+        public string Token { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(6)]
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    private static string CreateToken()
+    {
+        // 32 bytes => 256-bit token
+        var bytes = RandomNumberGenerator.GetBytes(32);
+        return Base64UrlEncode(bytes);
+    }
+
+    private static string HashToken(string rawToken)
+    {
+        var bytes = Encoding.UTF8.GetBytes(rawToken);
+        var hash = SHA256.HashData(bytes);
+        return Convert.ToHexString(hash).ToLowerInvariant(); // 64 hex chars
+    }
+
+    private static string Base64UrlEncode(byte[] input)
+    {
+        return Convert.ToBase64String(input)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+    }
+
+    private string BuildPasswordResetDeepLink(string rawToken)
+    {
+        // Example: khidma://reset-password?token=...
+        var baseLink = _configuration["AppLinks:PasswordResetDeepLinkBase"] ?? "khidma://reset-password";
+        var separator = baseLink.Contains('?') ? "&" : "?";
+        return $"{baseLink}{separator}token={Uri.EscapeDataString(rawToken)}";
     }
 
     [HttpPost("register")]
@@ -164,5 +215,115 @@ public class AuthController : ControllerBase
                 user.ProfileImageUrl
             }
         });
+    }
+
+    // ================== Password Reset Flow ==================
+
+    /// <summary>
+    /// Step 1: User submits email. We send a deep-link email if the user exists.
+    /// Always returns 200 to avoid user enumeration.
+    /// </summary>
+    [HttpPost("password-reset/request")]
+    public async Task<IActionResult> RequestPasswordReset([FromBody] PasswordResetRequestDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
+
+        // Always respond success (anti-enumeration)
+        if (user == null)
+        {
+            return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
+        }
+
+        // Create token + store hash
+        var rawToken = CreateToken();
+        var tokenHash = HashToken(rawToken);
+
+        var expiresMinutes = int.TryParse(_configuration["AppLinks:PasswordResetTokenExpiryMinutes"], out var m) ? m : 30;
+        var expiresAt = DateTime.UtcNow.AddMinutes(expiresMinutes);
+
+        var entity = new PasswordResetToken
+        {
+            UserId = user.UserId,
+            Email = user.Email,
+            TokenHash = tokenHash,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _context.PasswordResetTokens.Add(entity);
+        await _context.SaveChangesAsync();
+
+        var deepLink = BuildPasswordResetDeepLink(rawToken);
+        await _emailService.SendPasswordResetEmailAsync(user.Email, deepLink);
+
+        return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
+    }
+
+    /// <summary>
+    /// Step 2: Verify token when the user clicks the email link (the app calls this after deep-link open).
+    /// Marks the token as verified (but not used).
+    /// </summary>
+    [HttpGet("password-reset/verify")]
+    public async Task<IActionResult> VerifyPasswordResetToken([FromQuery][Required] string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return BadRequest(new { message = "Token is required." });
+
+        var tokenHash = HashToken(token);
+        var record = await _context.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash);
+
+        if (record == null)
+            return BadRequest(new { message = "Invalid or expired token." });
+
+        if (record.UsedAt != null)
+            return BadRequest(new { message = "Token already used." });
+
+        if (record.ExpiresAt <= DateTime.UtcNow)
+            return BadRequest(new { message = "Invalid or expired token." });
+
+        if (record.VerifiedAt == null)
+        {
+            record.VerifiedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        return Ok(new { message = "Verified." });
+    }
+
+    /// <summary>
+    /// Step 3: Update password. Requires a verified, non-expired, non-used token.
+    /// </summary>
+    [HttpPost("password-reset/update")]
+    public async Task<IActionResult> UpdatePassword([FromBody] PasswordResetUpdateDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var tokenHash = HashToken(request.Token);
+        var record = await _context.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash);
+
+        if (record == null)
+            return BadRequest(new { message = "Invalid or expired token." });
+
+        if (record.UsedAt != null)
+            return BadRequest(new { message = "Token already used." });
+
+        if (record.ExpiresAt <= DateTime.UtcNow)
+            return BadRequest(new { message = "Invalid or expired token." });
+
+        if (record.VerifiedAt == null)
+            return BadRequest(new { message = "Token not verified." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == record.UserId);
+        if (user == null)
+            return BadRequest(new { message = "Invalid token." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        record.UsedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Password updated." });
     }
 }
