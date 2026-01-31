@@ -186,4 +186,159 @@ public class UserConnectionsController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
+
+    // ✅ 7. PEOPLE YOU MAY KNOW – AI-style matching algorithm
+    [HttpGet("people-you-may-know/{userId}")]
+    public async Task<IActionResult> GetPeopleYouMayKnow(int userId)
+    {
+        try
+        {
+            var currentUser = await _context.Users
+                .Include(u => u.UserSkills!)
+                .ThenInclude(us => us.Skill)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+            if (currentUser == null) return NotFound("User not found.");
+
+            // Exclude: self + anyone with existing connection (pending or accepted)
+            var existingConnectionUserIds = await _context.UserConnections
+                .Where(c => c.RequesterId == userId || c.ReceiverId == userId)
+                .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
+                .Distinct()
+                .ToListAsync();
+            var excludeIds = new HashSet<int>(existingConnectionUserIds) { userId };
+
+            // Current user data for scoring
+            var mySkillIds = currentUser.UserSkills?.Select(us => us.SkillId).ToHashSet() ?? new HashSet<int>();
+            var myCity = (currentUser.City ?? "").Trim().ToLowerInvariant();
+            var myUserType = currentUser.UserType;
+
+            // Accepted connections only (for "mutual connections" score)
+            var friendIds = await _context.UserConnections
+                .Where(c => (c.RequesterId == userId || c.ReceiverId == userId) && c.Status == ConnectionStatus.Accepted)
+                .Select(c => c.RequesterId == userId ? c.ReceiverId : c.RequesterId)
+                .Distinct()
+                .ToListAsync();
+            var friendSet = new HashSet<int>(friendIds);
+
+            // All candidate users (not excluded), with skills
+            var candidates = await _context.Users
+                .Include(u => u.UserSkills!)
+                .ThenInclude(us => us.Skill)
+                .Where(u => !excludeIds.Contains(u.UserId))
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.FullName,
+                    u.ProfileImageUrl,
+                    u.UserType,
+                    u.City,
+                    u.JobTitle,
+                    SkillIds = u.UserSkills!.Select(us => us.SkillId).ToList(),
+                    SkillNames = u.UserSkills!.Select(us => us.Skill!.SkillName).ToList()
+                })
+                .ToListAsync();
+
+            // For mutual connections: get each candidate's accepted connection user IDs
+            var candidateIds = candidates.Select(c => c.UserId).ToList();
+            var connectionsOfCandidates = await _context.UserConnections
+                .Where(c => c.Status == ConnectionStatus.Accepted &&
+                    (candidateIds.Contains(c.RequesterId) || candidateIds.Contains(c.ReceiverId)))
+                .Select(c => new { c.RequesterId, c.ReceiverId })
+                .ToListAsync();
+            var mutualCountByCandidate = new Dictionary<int, int>();
+            foreach (var c in connectionsOfCandidates)
+            {
+                var otherId = candidateIds.Contains(c.RequesterId) ? c.ReceiverId : c.RequesterId;
+                var candId = candidateIds.Contains(c.RequesterId) ? c.RequesterId : c.ReceiverId;
+                if (friendSet.Contains(otherId))
+                {
+                    if (!mutualCountByCandidate.ContainsKey(candId)) mutualCountByCandidate[candId] = 0;
+                    mutualCountByCandidate[candId]++;
+                }
+            }
+
+            // Score each candidate (algorithm: shared skills, same city, mutual connections, user type relevance)
+            const int weightSharedSkill = 28;
+            const int weightSameCity = 22;
+            const int weightMutualConnection = 18;
+            const int weightComplementary = 16;  // Client sees Freelancer / Freelancer sees Client
+            const int weightSameType = 10;
+
+            var scored = new List<(object User, int Score, List<string> Reasons)>();
+
+            foreach (var c in candidates)
+            {
+                int score = 0;
+                var reasons = new List<string>();
+
+                int sharedSkills = c.SkillIds.Intersect(mySkillIds).Count();
+                if (sharedSkills > 0)
+                {
+                    score += sharedSkills * weightSharedSkill;
+                    reasons.Add(sharedSkills == 1 ? "1 shared skill" : $"{sharedSkills} shared skills");
+                }
+
+                if (!string.IsNullOrEmpty(myCity) && myCity == (c.City ?? "").Trim().ToLowerInvariant())
+                {
+                    score += weightSameCity;
+                    reasons.Add("Same city");
+                }
+
+                if (mutualCountByCandidate.TryGetValue(c.UserId, out int mutual) && mutual > 0)
+                {
+                    score += mutual * weightMutualConnection;
+                    reasons.Add(mutual == 1 ? "1 mutual connection" : $"{mutual} mutual connections");
+                }
+
+                // User type relevance: show complementary (clients ↔ freelancers) and same type (freelancers ↔ freelancers, clients ↔ clients)
+                bool isFreelancer = c.UserType == UserType.Freelancer;
+                bool myIsFreelancer = myUserType == UserType.Freelancer;
+                if (isFreelancer != myIsFreelancer)
+                {
+                    score += weightComplementary;
+                    reasons.Add(myIsFreelancer ? "Client – may need your skills" : "Freelancer – relevant to your work");
+                }
+                else if (isFreelancer && myIsFreelancer)
+                {
+                    score += weightSameType;
+                    reasons.Add("Same role – collaborate");
+                }
+                else
+                {
+                    score += weightSameType;
+                    reasons.Add("Same role – network");
+                }
+
+                var userPayload = new
+                {
+                    c.UserId,
+                    c.FullName,
+                    c.ProfileImageUrl,
+                    c.UserType,
+                    c.City,
+                    c.JobTitle,
+                    SkillNames = c.SkillNames
+                };
+                scored.Add((userPayload, score, reasons));
+            }
+
+            var ordered = scored
+                .OrderByDescending(x => x.Score)
+                .ThenByDescending(x => x.Reasons.Count)
+                .Take(50)
+                .Select(x => new
+                {
+                    user = x.User,
+                    matchScore = Math.Min(99, x.Score),
+                    matchReasons = x.Reasons
+                })
+                .ToList();
+
+            return Ok(ordered);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
 }
