@@ -85,6 +85,19 @@ public class AuthController : ControllerBase
         public string NewPassword { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// DTO for authenticated change-password (no reset token).
+    /// </summary>
+    public class ChangePasswordDto
+    {
+        [Required]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required]
+        [MinLength(6)]
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
     private static string CreateToken()
     {
         // 32 bytes => 256-bit token
@@ -231,13 +244,11 @@ public class AuthController : ControllerBase
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email);
 
-        // Always respond success (anti-enumeration)
         if (user == null)
         {
             return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
         }
 
-        // Create token + store hash
         var rawToken = CreateToken();
         var tokenHash = HashToken(rawToken);
 
@@ -259,7 +270,11 @@ public class AuthController : ControllerBase
         var deepLink = BuildPasswordResetDeepLink(rawToken);
         await _emailService.SendPasswordResetEmailAsync(user.Email, deepLink);
 
-        return Ok(new { message = "If an account exists for this email, a reset link has been sent." });
+        return Ok(new
+        {
+            message = "If an account exists for this email, a reset link has been sent.",
+            token = rawToken
+        });
     }
 
     /// <summary>
@@ -325,5 +340,60 @@ public class AuthController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(new { message = "Password updated." });
+    }
+
+    /// <summary>
+    /// Change password when logged in: verify current password, then update to new.
+    /// If NewPassword equals CurrentPassword, only verification is performed (no update).
+    /// </summary>
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto request)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
+        var userId = _jwtService.GetUserIdFromClaims(User);
+        if (userId == null)
+            return Unauthorized(new { message = "Invalid or missing token." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId.Value);
+        if (user == null)
+            return Unauthorized(new { message = "User not found." });
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            return BadRequest(new { message = "Current password is incorrect." });
+
+        if (request.CurrentPassword == request.NewPassword)
+            return Ok(new { message = "Password verified.", verified = true });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Password updated.", updated = true });
+    }
+
+    /// <summary>
+    /// Direct password reset: email + new password. No token. Demo only.
+    /// </summary>
+    [HttpPost("password-reset/direct")]
+    public async Task<IActionResult> DirectPasswordReset([FromBody] DirectResetDto request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.NewPassword))
+            return BadRequest(new { message = "Email and new password required." });
+        if (request.NewPassword.Length < 6)
+            return BadRequest(new { message = "Password must be at least 6 characters." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.Trim().ToLower());
+        if (user == null)
+            return BadRequest(new { message = "Account not found." });
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Password updated." });
+    }
+
+    public class DirectResetDto
+    {
+        public string Email { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
     }
 }
